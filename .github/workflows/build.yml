@@ -1,0 +1,27 @@
+name: Build
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build exe
+        shell: powershell
+        run: |
+          $version = "1.0.0.0"
+          if ($env:GITHUB_REF_TYPE -eq "tag") { $version = ($env:GITHUB_REF_NAME.TrimStart("v")) + ".0" }
+          & .\build.ps1 -Version $version
+
+      - name: Upload exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: FS25-Server-Sync
+          path: dist/*.exe
+          if-no-files-found: error
