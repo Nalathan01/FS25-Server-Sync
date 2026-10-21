@@ -307,6 +307,11 @@ button, input { font: inherit; color: inherit; }
       <div class="v" id="activePath"></div>
       <div class="acts" id="activeActs"></div>
     </div>
+    <div class="foot-box" id="archBox" style="display:none">
+      <div class="k" data-i18n="archive"></div>
+      <div class="v" id="archInfo"></div>
+      <div class="acts"><button class="btn small ghost" id="archOpen" data-i18n="open"></button><button class="btn small ghost danger" id="archClear" data-i18n="clearArchive"></button></div>
+    </div>
     <div class="foot-box">
       <div class="k" data-i18n="settings"></div>
       <div class="v" id="dataPath"></div>
@@ -442,6 +447,7 @@ const I18N = {
     e_noGameSettings: "gameSettings.xml nicht gefunden: {a}", e_serverUnknown: "Server nicht gefunden.", e_busy: "Es läuft gerade schon ein Vorgang.", e_nameEmpty: "Bitte einen Namen eintragen.",
     e_targetUsed: "Dieser Zielordner gehört schon zu \"{a}\".", e_noPlan: "Bitte zuerst prüfen.", e_notSynced: "Bitte zuerst abgleichen.", e_folderMissing: "Ordner nicht gefunden.",
     e_unexpected: "Unerwarteter Fehler: {a}", errorN: "Fehler {n}",
+    archive: "Archiv", archiveInfo: "{s} in {n} Dateien", archiveInfo1: "{s} in 1 Datei", clearArchive: "Leeren", clearConfirm: "Archiv wirklich leeren? {s} in {n} Dateien werden endgültig gelöscht. Es sind Dateien, die vorher in einem Zielordner lagen und nicht vom Tool geladen wurden.", archiveCleared: "Archiv geleert.", tDelete: "vom Server geladen, wird gelöscht", remDel1: "1 vom Server geladene Datei wird gelöscht", remDelN: "{n} vom Server geladene Dateien werden gelöscht",
     settings: "Einstellungen", remUnlink1: "1 Verknüpfung wird entfernt, die Datei bleibt in deiner Bibliothek", remUnlinkN: "{n} Verknüpfungen werden entfernt, die Dateien bleiben in deiner Bibliothek", remArch1: "1 Datei kommt ins Archiv (_ServerDownloads\\_Archiv)", remArchN: "{n} Dateien kommen ins Archiv (_ServerDownloads\\_Archiv)",
     dlcPill: "DLCs: {a} von {b} vorhanden", dlcPillUnknown: "Server nutzt {b} DLCs", alertDlcMissing: "Dir fehlen DLCs, die der Server nutzt: {x}", alertDlcMissingText: "Ohne sie kannst du dem Server nicht beitreten. DLCs kann das Tool nicht herunterladen, sie müssen gekauft und installiert sein. Danach erneut prüfen.", alertDlcUnknown: "Der Server nutzt diese DLCs: {x}", alertDlcUnknownText: "Deine Spielinstallation wurde nicht gefunden, deshalb kann das Tool nicht prüfen, ob du sie hast. Ohne sie ist kein Beitritt möglich.", h1Dlc: "Installiere zuerst die fehlenden DLCs, danach erneut prüfen.",
     gInactive: "Auf dem Server inaktiv", gInactiveDesc: "Nur für Admins sichtbar. Diese Mods liegen auf dem Server, sind dort aber ausgeschaltet und belegen zusammen {size}. Wenn sie nicht mehr gebraucht werden, kannst du sie im Webinterface löschen. Das Tool ändert am Server nichts und lädt sie nicht herunter.", adminPill: "Admin-Rechte",
@@ -511,6 +517,7 @@ const I18N = {
     e_noGameSettings: "gameSettings.xml not found: {a}", e_serverUnknown: "Server not found.", e_busy: "Another operation is already running.", e_nameEmpty: "Please enter a name.",
     e_targetUsed: "This target folder already belongs to \"{a}\".", e_noPlan: "Please check first.", e_notSynced: "Please sync first.", e_folderMissing: "Folder not found.",
     e_unexpected: "Unexpected error: {a}", errorN: "Error {n}",
+    archive: "Archive", archiveInfo: "{s} in {n} files", archiveInfo1: "{s} in 1 file", clearArchive: "Empty", clearConfirm: "Really empty the archive? {s} in {n} files will be deleted for good. These are files that were in a target folder before and were not downloaded by the tool.", archiveCleared: "Archive emptied.", tDelete: "downloaded from the server, will be deleted", remDel1: "1 file downloaded from the server is deleted", remDelN: "{n} files downloaded from the server are deleted",
     settings: "Settings", remUnlink1: "1 link is removed, the file stays in your library", remUnlinkN: "{n} links are removed, the files stay in your library", remArch1: "1 file is moved to the archive (_ServerDownloads\\_Archiv)", remArchN: "{n} files are moved to the archive (_ServerDownloads\\_Archiv)",
     dlcPill: "DLCs: {a} of {b} installed", dlcPillUnknown: "Server uses {b} DLCs", alertDlcMissing: "You are missing DLCs the server uses: {x}", alertDlcMissingText: "You cannot join the server without them. The tool cannot download DLCs, they have to be bought and installed. Check again afterwards.", alertDlcUnknown: "The server uses these DLCs: {x}", alertDlcUnknownText: "Your game installation was not found, so the tool cannot check whether you own them. Joining is not possible without them.", h1Dlc: "Install the missing DLCs first, then check again.",
     gInactive: "Inactive on the server", gInactiveDesc: "Only visible to admins. These mods are on the server but switched off there, together they take up {size}. If they are no longer needed, you can delete them in the web interface. The tool changes nothing on the server and does not download them.", adminPill: "Admin rights",
@@ -580,6 +587,7 @@ const I18N = {
     e_noGameSettings: "gameSettings.xml introuvable : {a}", e_serverUnknown: "Serveur introuvable.", e_busy: "Une opération est déjà en cours.", e_nameEmpty: "Veuillez saisir un nom.",
     e_targetUsed: "Ce dossier cible appartient déjà à \"{a}\".", e_noPlan: "Veuillez d'abord vérifier.", e_notSynced: "Veuillez d'abord synchroniser.", e_folderMissing: "Dossier introuvable.",
     e_unexpected: "Erreur inattendue : {a}", errorN: "Erreur {n}",
+    archive: "Archive", archiveInfo: "{s} dans {n} fichiers", archiveInfo1: "{s} dans 1 fichier", clearArchive: "Vider", clearConfirm: "Vraiment vider l'archive ? {s} dans {n} fichiers seront supprimés définitivement. Ce sont des fichiers qui se trouvaient déjà dans un dossier cible et qui n'ont pas été téléchargés par l'outil.", archiveCleared: "Archive vidée.", tDelete: "téléchargé depuis le serveur, sera supprimé", remDel1: "1 fichier téléchargé depuis le serveur est supprimé", remDelN: "{n} fichiers téléchargés depuis le serveur sont supprimés",
     settings: "Paramètres", remUnlink1: "1 lien est retiré, le fichier reste dans votre bibliothèque", remUnlinkN: "{n} liens sont retirés, les fichiers restent dans votre bibliothèque", remArch1: "1 fichier est déplacé vers l'archive (_ServerDownloads\\_Archiv)", remArchN: "{n} fichiers sont déplacés vers l'archive (_ServerDownloads\\_Archiv)",
     dlcPill: "DLC : {a} sur {b} installés", dlcPillUnknown: "Le serveur utilise {b} DLC", alertDlcMissing: "Il vous manque des DLC utilisés par le serveur : {x}", alertDlcMissingText: "Sans eux, impossible de rejoindre le serveur. L'outil ne peut pas télécharger de DLC, ils doivent être achetés et installés. Vérifiez à nouveau ensuite.", alertDlcUnknown: "Le serveur utilise ces DLC : {x}", alertDlcUnknownText: "Votre installation du jeu est introuvable, l'outil ne peut donc pas vérifier si vous les possédez. Impossible de rejoindre sans eux.", h1Dlc: "Installez d'abord les DLC manquants, puis vérifiez à nouveau.",
     gInactive: "Inactifs sur le serveur", gInactiveDesc: "Visible uniquement pour les admins. Ces mods sont sur le serveur mais désactivés, ils occupent ensemble {size}. S'ils ne sont plus nécessaires, vous pouvez les supprimer dans l'interface web. L'outil ne modifie rien sur le serveur et ne les télécharge pas.", adminPill: "Droits admin",
@@ -690,6 +698,8 @@ function renderRail() {
   lib.textContent = st.library || t("notSet");
   lib.classList.toggle("missing", !st.libraryExists);
   $("dataPath").textContent = st.dataDir || "";
+  $("archBox").style.display = st.archiveCount ? "" : "none";
+  if (st.archiveCount) $("archInfo").textContent = st.archiveCount === 1 ? t("archiveInfo1", { s: fmtBytes(st.archiveBytes) }) : t("archiveInfo", { s: fmtBytes(st.archiveBytes), n: fmt(st.archiveCount) });
   $("libOpen").disabled = !st.libraryExists;
   $("activePath").textContent = st.activeOverride || t("defaultFolder");
   $("activeActs").innerHTML = st.canRestore ? `<button class="btn small" id="restoreBtn">${esc(t("restorePrev"))}</button>` : "";
@@ -896,7 +906,7 @@ function cardHtml(r, g) {
   if (r.Status === "nodl" && r.InTarget) tags.push(`<span class="tag good">${esc(t("tInTarget"))}</span>`);
   if (r.IsDir) tags.push(`<span class="tag">${esc(t("tFolder"))}</span>`);
   let note = "";
-  if (r.Status === "remove") note = `<div class="note">${esc(r.RemoveMode === "unlink" ? t("tUnlink") : t("tArchive"))}</div>`;
+  if (r.Status === "remove") note = `<div class="note">${esc(r.RemoveMode === "unlink" ? t("tUnlink") : r.RemoveMode === "delete" ? t("tDelete") : t("tArchive"))}</div>`;
   if (r.Status === "error") note = `<div class="note" style="color:#ff9b9b">${esc(tErr(r.ErrorCode, r.ErrorArg))}</div>`;
   const sub = r.Author && r.Status !== "remove" ? `${esc(r.FileName)} · ${esc(r.Author)}` : esc(r.FileName);
   return `<article class="card"><span class="stripe" style="background:${g.color}"></span>${ico}<div class="card-body"><div class="card-title">${esc(r.Title || r.ModName)}</div><div class="card-name" title="${esc(r.FileName)}">${sub}</div><div class="tags">${tags.join("")}</div>${note}</div></article>`;
@@ -1024,6 +1034,12 @@ function openLibModal() {
 $("libChange").onclick = openLibModal;
 $("libOpen").onclick = () => api("/api/open", { path: state.st.library }).catch(e => toast(e.message, true));
 $("dataOpen").onclick = () => api("/api/open", { path: state.st.dataDir }).catch(e => toast(e.message, true));
+$("archOpen").onclick = () => api("/api/open", { path: state.st.archiveDir }).catch(e => toast(e.message, true));
+$("archClear").onclick = async () => {
+  const st = state.st;
+  if (!confirm(t("clearConfirm", { s: fmtBytes(st.archiveBytes), n: fmt(st.archiveCount) }))) return;
+  try { state.st = await api("/api/archive/clear", {}); renderRail(); toast(t("archiveCleared"), "ok"); } catch (e) { toast(e.message, true); }
+};
 $("fLibPick").onclick = async () => {
   try {
     const r = await api("/api/pick", { title: t("library"), start: $("fLib").value.trim() });
@@ -1042,7 +1058,8 @@ function openApplyModal() {
   const rows = p.Rows;
   const sumBytes = st => rows.filter(r => r.Status === st).reduce((a, r) => a + Math.max(0, r.Bytes), 0);
   const unlink = rows.filter(r => r.Status === "remove" && r.RemoveMode === "unlink").length;
-  const archive = rows.filter(r => r.Status === "remove" && r.RemoveMode !== "unlink").length;
+  const archive = rows.filter(r => r.Status === "remove" && r.RemoveMode === "archive").length;
+  const deleted = rows.filter(r => r.Status === "remove" && r.RemoveMode === "delete").length;
   const line = (color, label, sub, val) => `<div class="sumrow"><span class="sw" style="background:${color}"></span><div>${esc(label)}${sub ? `<small>${esc(sub)}</small>` : ""}</div><b>${val}</b></div>`;
   let body = `<div class="sumlist">`;
   if (c.download) body += line("var(--s-download)", t("sDownload"), fmtBytes(sumBytes("download")), fmt(c.download));
@@ -1051,6 +1068,7 @@ function openApplyModal() {
   if (c.link) body += line("var(--s-link)", p.SameVolume ? t("sLink") : t("sCopy"), "", fmt(c.link));
   const remParts = [];
   if (unlink) remParts.push(unlink === 1 ? t("remUnlink1") : t("remUnlinkN", { n: fmt(unlink) }));
+  if (deleted) remParts.push(deleted === 1 ? t("remDel1") : t("remDelN", { n: fmt(deleted) }));
   if (archive) remParts.push(archive === 1 ? t("remArch1") : t("remArchN", { n: fmt(archive) }));
   if (c.remove) body += line("var(--s-remove)", t("sRemove"), remParts.join(". "), fmt(c.remove));
   if (!c.download && !c.update && !c.check && !c.link && !c.remove) body += `<p>${esc(t("nothingToDo"))}</p>`;

@@ -144,7 +144,7 @@ internal static partial class Sync
                 plan.Rows.Add(r);
             }
         }
-        if (Directory.Exists(target)) AddRemovals(plan, target, expected);
+        if (Directory.Exists(target)) AddRemovals(cfg, plan, target, expected);
         MapInfo(plan, active.Where(m => !skipMaps.Contains(m)).ToList(), target);
 
         lock (Config.Sync) server.LastCheck = plan.Created.ToString("yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture);
@@ -256,7 +256,7 @@ internal static partial class Sync
         return row;
     }
 
-    private static void AddRemovals(Plan plan, string target, HashSet<string> expected)
+    private static void AddRemovals(Config cfg, Plan plan, string target, HashSet<string> expected)
     {
         foreach (string entry in Directory.EnumerateFileSystemEntries(target))
         {
@@ -280,7 +280,7 @@ internal static partial class Sync
                 row.Version = ReadZip(entry).Version;
                 row.IconPath = entry;
                 row.Bytes = SizeOf(entry);
-                row.RemoveMode = NativeLinks.LinkCount(entry) > 1 ? "unlink" : "archive";
+                row.RemoveMode = NativeLinks.LinkCount(entry) > 1 ? "unlink" : IsToolFile(cfg, entry) ? "delete" : "archive";
             }
             plan.Rows.Add(row);
         }

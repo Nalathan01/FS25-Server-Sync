@@ -278,6 +278,45 @@ internal static partial class Sync
         try { return new FileInfo(path).Length; } catch (Exception) { return -1; }
     }
 
+    private static string PlacedKey(string path)
+    {
+        return AppEnv.NormalizeDir(path).ToLowerInvariant();
+    }
+
+    public static void MarkPlaced(Config cfg, string path)
+    {
+        long len = SizeOf(path);
+        if (len < 0) return;
+        lock (Config.Sync) cfg.Placed[PlacedKey(path)] = len.ToString(CultureInfo.InvariantCulture);
+    }
+
+    public static void UnmarkPlaced(Config cfg, string path)
+    {
+        lock (Config.Sync) cfg.Placed.Remove(PlacedKey(path));
+    }
+
+    public static bool IsToolFile(Config cfg, string path)
+    {
+        long len = SizeOf(path);
+        if (len < 0) return false;
+        string v;
+        lock (Config.Sync)
+        {
+            if (cfg.Placed.TryGetValue(PlacedKey(path), out v) && v == len.ToString(CultureInfo.InvariantCulture)) return true;
+        }
+        string name = Path.GetFileName(path);
+        List<string> hashes;
+        lock (Config.Sync) hashes = cfg.ServerHashes.Where(kv => kv.Key.IndexOf("|" + name + "|", StringComparison.OrdinalIgnoreCase) >= 0).Select(kv => kv.Value).ToList();
+        if (hashes.Count == 0) return false;
+        try { return hashes.Contains(GameHash(cfg, path, Path.GetFileNameWithoutExtension(path), null)); }
+        catch (Exception) { return false; }
+    }
+
+    public static string ArchiveDir(string library)
+    {
+        return Path.Combine(StoreDir(library), "_Archiv");
+    }
+
     public static string PlaceInStore(string store, string fileName, string file)
     {
         Directory.CreateDirectory(store);

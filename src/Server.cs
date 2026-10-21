@@ -274,6 +274,17 @@ internal sealed class SyncServer
                 cfg.Save();
                 SendJson(ctx, 200, Obj("removed", removed));
             }
+            else if (path == "/api/archive/clear")
+            {
+                EnsureIdle();
+                string dir = string.IsNullOrEmpty(cfg.Library) ? null : Sync.ArchiveDir(cfg.Library);
+                if (dir != null && Directory.Exists(dir))
+                {
+                    Directory.Delete(dir, true);
+                    AppEnv.Log("Archiv", "Geleert: " + dir);
+                }
+                SendJson(ctx, 200, State());
+            }
             else if (path == "/api/launch")
             {
                 try { Process.Start("steam://rungameid/2300320"); }
@@ -361,6 +372,24 @@ internal sealed class SyncServer
         r["gameRunning"] = AppEnv.GameRunning();
         r["library"] = cfg.Library;
         r["dataDir"] = AppEnv.DataDir;
+        long archBytes = 0;
+        int archCount = 0;
+        string archDir = string.IsNullOrEmpty(cfg.Library) ? null : Sync.ArchiveDir(cfg.Library);
+        if (archDir != null && Directory.Exists(archDir))
+        {
+            try
+            {
+                foreach (string f in Directory.EnumerateFiles(archDir, "*", SearchOption.AllDirectories))
+                {
+                    archCount++;
+                    try { archBytes += new FileInfo(f).Length; } catch (Exception) { }
+                }
+            }
+            catch (Exception) { }
+        }
+        r["archiveDir"] = archDir;
+        r["archiveBytes"] = archBytes;
+        r["archiveCount"] = archCount;
         r["libraryExists"] = !string.IsNullOrEmpty(cfg.Library) && Directory.Exists(cfg.Library);
         r["store"] = string.IsNullOrEmpty(cfg.Library) ? null : Sync.StoreDir(cfg.Library);
         r["activeOverride"] = active;
@@ -596,7 +625,7 @@ internal sealed class SyncServer
     private void OpenFolder(string path)
     {
         string dir = AppEnv.NormalizeDir(path);
-        bool allowed = AppEnv.SamePath(dir, AppEnv.DataDir) || AppEnv.SamePath(dir, cfg.Library) || (cfg.Library != null && AppEnv.SamePath(dir, Sync.StoreDir(cfg.Library))) || cfg.Servers.Any(s => AppEnv.SamePath(dir, s.Target));
+        bool allowed = (cfg.Library != null && AppEnv.SamePath(dir, Sync.ArchiveDir(cfg.Library))) || AppEnv.SamePath(dir, AppEnv.DataDir) || AppEnv.SamePath(dir, cfg.Library) || (cfg.Library != null && AppEnv.SamePath(dir, Sync.StoreDir(cfg.Library))) || cfg.Servers.Any(s => AppEnv.SamePath(dir, s.Target));
         if (!allowed || !Directory.Exists(dir)) throw new AppError("folderMissing", path);
         FolderPicker.OpenFolderInFront(dir);
     }

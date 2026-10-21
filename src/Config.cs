@@ -45,6 +45,7 @@ internal sealed class Config
     public List<ServerEntry> Servers = new List<ServerEntry>();
     public Dictionary<string, string> LocalHashes = new Dictionary<string, string>();
     public Dictionary<string, string> ServerHashes = new Dictionary<string, string>();
+    public Dictionary<string, string> Placed = new Dictionary<string, string>();
 
     public static readonly object Sync = new object();
 
@@ -58,7 +59,7 @@ internal sealed class Config
         if (File.Exists(FilePath)) return;
         string[] old = new string[]
         {
-            Path.Combine(AppEnv.DataDir, "serverabgleich.json"),
+            Path.Combine(AppEnv.SettingsDir ?? AppEnv.DataDir, "serverabgleich.json"),
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LS25 Server Abgleich", "serverabgleich.json")
         };
         foreach (string o in old)
@@ -85,6 +86,7 @@ internal sealed class Config
         if (c.Servers == null) c.Servers = new List<ServerEntry>();
         if (c.LocalHashes == null) c.LocalHashes = new Dictionary<string, string>();
         if (c.ServerHashes == null) c.ServerHashes = new Dictionary<string, string>();
+        if (c.Placed == null) c.Placed = new Dictionary<string, string>();
         if (string.IsNullOrEmpty(c.Library)) c.Library = AppEnv.DefaultLibrary();
         return c;
     }

@@ -25,7 +25,7 @@ internal static partial class Sync
         {
             job.ThrowIfCancelled();
             job.Current = r.Title;
-            Retire(r.TargetPath, archive);
+            Retire(cfg, r.TargetPath, archive);
             job.Done++;
         }
 
@@ -78,7 +78,7 @@ internal static partial class Sync
             string t = Path.Combine(target, r.FileName);
             if (r.Status == "link")
             {
-                LinkInto(r.Source, t, archive, sameVolume);
+                LinkInto(cfg, r.Source, t, archive, sameVolume);
                 job.Done++;
                 continue;
             }
@@ -86,7 +86,7 @@ internal static partial class Sync
             string h = fetchedHash[r];
             if (file == null)
             {
-                if (!AppEnv.SamePath(r.CompareWith, t)) LinkInto(r.CompareWith, t, archive, sameVolume);
+                if (!AppEnv.SamePath(r.CompareWith, t)) LinkInto(cfg, r.CompareWith, t, archive, sameVolume);
                 job.Identical++;
                 job.Done++;
                 continue;
@@ -104,7 +104,7 @@ internal static partial class Sync
             if (same != null)
             {
                 File.Delete(file);
-                LinkInto(same.Path, t, archive, sameVolume);
+                LinkInto(cfg, same.Path, t, archive, sameVolume);
                 job.Identical++;
             }
             else
@@ -114,12 +114,13 @@ internal static partial class Sync
                 string placed = cands.Count == 0 ? PlaceInStore(store, r.FileName, file) : null;
                 if (placed != null)
                 {
-                    LinkInto(placed, t, archive, sameVolume);
+                    LinkInto(cfg, placed, t, archive, sameVolume);
                 }
                 else
                 {
-                    Retire(t, archive);
+                    Retire(cfg, t, archive);
                     File.Move(file, t);
+                    MarkPlaced(cfg, t);
                 }
             }
             job.Done++;
@@ -135,15 +136,19 @@ internal static partial class Sync
         AppEnv.Log("Abgeglichen", server.Name + " nach " + target + " (" + Summary(plan) + ")");
     }
 
-    private static void LinkInto(string source, string t, string archive, bool sameVolume)
+    private static void LinkInto(Config cfg, string source, string t, string archive, bool sameVolume)
     {
         if (File.Exists(t) && NativeLinks.SameFile(t, source)) return;
-        Retire(t, archive);
+        Retire(cfg, t, archive);
         if (sameVolume) NativeLinks.CreateHardLink(t, source);
-        else File.Copy(source, t);
+        else
+        {
+            File.Copy(source, t);
+            MarkPlaced(cfg, t);
+        }
     }
 
-    private static void Retire(string path, string archive)
+    private static void Retire(Config cfg, string path, string archive)
     {
         string name = Path.GetFileName(path);
         if (Directory.Exists(path))
@@ -155,7 +160,14 @@ internal static partial class Sync
             return;
         }
         if (!File.Exists(path)) return;
-        if (NativeLinks.LinkCount(path) > 1) { File.Delete(path); return; }
+        if (NativeLinks.LinkCount(path) > 1) { File.Delete(path); UnmarkPlaced(cfg, path); return; }
+        if (IsToolFile(cfg, path))
+        {
+            File.Delete(path);
+            UnmarkPlaced(cfg, path);
+            AppEnv.Log("Geloescht", path + " (vom Server geladen, nicht mehr benoetigt)");
+            return;
+        }
         Directory.CreateDirectory(archive);
         File.Move(path, Path.Combine(archive, name));
         AppEnv.Log("Archiviert", path + " nach " + archive);

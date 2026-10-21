@@ -23,6 +23,7 @@ internal sealed class AppError : Exception
 internal static class AppEnv
 {
     public static string DataDir;
+    public static string SettingsDir;
     public static string ModsRoot;
     public static string MapsRoot;
     public static string GameSettingsPath;
@@ -69,10 +70,12 @@ internal static class AppEnv
                 }
             }
             catch (Exception) { }
-            DataDir = settingsDir;
+            SettingsDir = settingsDir;
+            DataDir = Path.Combine(settingsDir, "FS25 Server Sync");
         }
         if (DataDir == null) DataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FS25 Server Sync");
         Directory.CreateDirectory(DataDir);
+        if (SettingsDir != null) MoveFromSettingsDir();
         if (string.IsNullOrEmpty(MapsRoot) && !string.IsNullOrEmpty(ModsRoot)) MapsRoot = Path.Combine(ModsRoot, "Karten");
     }
 
@@ -129,6 +132,24 @@ internal static class AppEnv
             foreach (string f in Directory.GetDirectories(d)) if (f.EndsWith(".dlc", StringComparison.OrdinalIgnoreCase)) result.Add(Path.GetFileName(f));
         }
         return any ? result : null;
+    }
+
+    private static void MoveFromSettingsDir()
+    {
+        foreach (string name in new string[] { "serversync.json", "serversync.log" })
+        {
+            string from = Path.Combine(SettingsDir, name);
+            string to = Path.Combine(DataDir, name);
+            if (File.Exists(from) && !File.Exists(to)) { try { File.Move(from, to); } catch (Exception) { } }
+        }
+        string icons = Path.Combine(SettingsDir, "icons");
+        string iconsTo = Path.Combine(DataDir, "icons");
+        if (Directory.Exists(icons) && !Directory.Exists(iconsTo))
+        {
+            bool ours = true;
+            foreach (string f in Directory.GetFiles(icons)) if (!f.EndsWith("_192.png", StringComparison.OrdinalIgnoreCase)) { ours = false; break; }
+            if (ours && Directory.GetDirectories(icons).Length == 0) { try { Directory.Move(icons, iconsTo); } catch (Exception) { } }
+        }
     }
 
     public static string DefaultLibrary()
