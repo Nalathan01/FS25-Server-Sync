@@ -598,7 +598,7 @@ internal sealed class SyncServer
         string dir = AppEnv.NormalizeDir(path);
         bool allowed = AppEnv.SamePath(dir, AppEnv.DataDir) || AppEnv.SamePath(dir, cfg.Library) || (cfg.Library != null && AppEnv.SamePath(dir, Sync.StoreDir(cfg.Library))) || cfg.Servers.Any(s => AppEnv.SamePath(dir, s.Target));
         if (!allowed || !Directory.Exists(dir)) throw new AppError("folderMissing", path);
-        Process.Start("explorer.exe", "\"" + dir + "\"");
+        FolderPicker.OpenFolderInFront(dir);
     }
 
     private string IconPath(string id, string index)

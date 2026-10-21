@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System;
 using System.Drawing;
 using System.IO;
@@ -86,6 +87,9 @@ internal static class FolderPicker
     [DllImport("user32.dll")]
     private static extern bool ShowWindow(IntPtr hWnd, int cmd);
 
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder text, int max);
+
     private static IntPtr FindDialog()
     {
         uint me = (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
@@ -118,6 +122,55 @@ internal static class FolderPicker
         BringWindowToTop(h);
         SetForegroundWindow(h);
         if (attached) AttachThreadInput(me, fgThread, false);
+    }
+
+    private static List<IntPtr> ExplorerWindows(string title)
+    {
+        List<IntPtr> result = new List<IntPtr>();
+        EnumWindows((h, l) =>
+        {
+            if (!IsWindowVisible(h)) return true;
+            System.Text.StringBuilder sb = new System.Text.StringBuilder(64);
+            GetClassName(h, sb, sb.Capacity);
+            if (sb.ToString() != "CabinetWClass") return true;
+            if (title != null)
+            {
+                System.Text.StringBuilder tb = new System.Text.StringBuilder(512);
+                GetWindowText(h, tb, tb.Capacity);
+                string t = tb.ToString();
+                if (!string.Equals(t, title, StringComparison.OrdinalIgnoreCase) && t.IndexOf(title, StringComparison.OrdinalIgnoreCase) < 0) return true;
+            }
+            result.Add(h);
+            return true;
+        }, IntPtr.Zero);
+        return result;
+    }
+
+    public static void OpenFolderInFront(string dir)
+    {
+        HashSet<IntPtr> before = new HashSet<IntPtr>(ExplorerWindows(null));
+        System.Diagnostics.Process.Start("explorer.exe", "\"" + dir + "\"");
+        string name = Path.GetFileName(dir.TrimEnd('\\'));
+        if (string.IsNullOrEmpty(name)) name = dir;
+        System.Threading.Thread t = new System.Threading.Thread(() =>
+        {
+            for (int i = 0; i < 50; i++)
+            {
+                System.Threading.Thread.Sleep(100);
+                IntPtr target = IntPtr.Zero;
+                foreach (IntPtr h in ExplorerWindows(null)) if (!before.Contains(h)) { target = h; break; }
+                if (target == IntPtr.Zero && i >= 15)
+                {
+                    List<IntPtr> named = ExplorerWindows(name);
+                    if (named.Count > 0) target = named[0];
+                }
+                if (target == IntPtr.Zero) continue;
+                ForceFront(target);
+                if (GetForegroundWindow() == target) return;
+            }
+        });
+        t.IsBackground = true;
+        t.Start();
     }
 
     private static void WatchForDialog()
