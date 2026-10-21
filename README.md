@@ -80,3 +80,11 @@ Questions, ideas or a server where something does not work? Open an [issue](http
 * Download: https://nalathan.itch.io/fs25-server-sync
 * Website: https://www.nalathan.de/
 * YouTube: https://www.youtube.com/@nalathangaming
+
+## License
+
+MIT, see [LICENSE](LICENSE).
+
+## Disclaimer
+
+FS25 Server Sync is an unofficial fan tool. It is not affiliated with or endorsed by GIANTS Software. Farming Simulator is a trademark of GIANTS Software. All mod names and icons belong to their authors.
