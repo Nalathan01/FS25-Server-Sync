@@ -69,6 +69,74 @@ internal static class FolderPicker
     [DllImport("user32.dll")]
     private static extern bool BringWindowToTop(IntPtr hWnd);
 
+    private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+
+    [DllImport("user32.dll")]
+    private static extern bool EnumWindows(EnumWindowsProc callback, IntPtr lParam);
+
+    [DllImport("user32.dll")]
+    private static extern bool IsWindowVisible(IntPtr hWnd);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder name, int max);
+
+    [DllImport("user32.dll")]
+    private static extern bool SetWindowPos(IntPtr hWnd, IntPtr after, int x, int y, int cx, int cy, uint flags);
+
+    [DllImport("user32.dll")]
+    private static extern bool ShowWindow(IntPtr hWnd, int cmd);
+
+    private static IntPtr FindDialog()
+    {
+        uint me = (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
+        IntPtr found = IntPtr.Zero;
+        EnumWindows((h, l) =>
+        {
+            uint pid;
+            GetWindowThreadProcessId(h, out pid);
+            if (pid != me || !IsWindowVisible(h)) return true;
+            System.Text.StringBuilder sb = new System.Text.StringBuilder(64);
+            GetClassName(h, sb, sb.Capacity);
+            if (sb.ToString() != "#32770") return true;
+            found = h;
+            return false;
+        }, IntPtr.Zero);
+        return found;
+    }
+
+    private static void ForceFront(IntPtr h)
+    {
+        IntPtr fg = GetForegroundWindow();
+        if (fg == h) return;
+        uint pid;
+        uint fgThread = fg == IntPtr.Zero ? 0 : GetWindowThreadProcessId(fg, out pid);
+        uint me = GetCurrentThreadId();
+        bool attached = fgThread != 0 && fgThread != me && AttachThreadInput(me, fgThread, true);
+        ShowWindow(h, 5);
+        SetWindowPos(h, new IntPtr(-1), 0, 0, 0, 0, 0x0003);
+        SetWindowPos(h, new IntPtr(-2), 0, 0, 0, 0, 0x0003);
+        BringWindowToTop(h);
+        SetForegroundWindow(h);
+        if (attached) AttachThreadInput(me, fgThread, false);
+    }
+
+    private static void WatchForDialog()
+    {
+        System.Threading.Thread t = new System.Threading.Thread(() =>
+        {
+            for (int i = 0; i < 40; i++)
+            {
+                System.Threading.Thread.Sleep(100);
+                IntPtr h = FindDialog();
+                if (h == IntPtr.Zero) continue;
+                ForceFront(h);
+                if (GetForegroundWindow() == h) return;
+            }
+        });
+        t.IsBackground = true;
+        t.Start();
+    }
+
     private const uint FosPickFolders = 0x20;
     private const uint FosForceFileSystem = 0x40;
     private const uint SigdnFileSysPath = 0x80058000;
@@ -115,6 +183,7 @@ internal static class FolderPicker
                     }
                     catch (Exception) { }
                 }
+                WatchForDialog();
                 if (dlg.Show(owner.Handle) != 0) return null;
                 IShellItem result;
                 dlg.GetResult(out result);

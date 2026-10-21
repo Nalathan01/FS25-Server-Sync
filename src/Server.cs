@@ -148,10 +148,25 @@ internal sealed class SyncServer
                     ServerEntry known = cfg.Servers.FirstOrDefault(x => x.Id == sid);
                     if (known != null) pass = known.PlainPassword();
                 }
-                string map = ServerPage.FindMapTitle(AppEnv.GetString(body, "url"), user, pass);
-                Dictionary<string, object> r = Obj("path", AppEnv.SuggestTarget(AppEnv.GetString(body, "name"), map));
-                r["map"] = map;
-                SendJson(ctx, 200, r);
+                string url = AppEnv.GetString(body, "url");
+                string name = AppEnv.GetString(body, "name");
+                System.Threading.Thread th = new System.Threading.Thread(() =>
+                {
+                    try
+                    {
+                        string map = ServerPage.FindMapTitle(url, user, pass);
+                        Dictionary<string, object> r = Obj("path", AppEnv.SuggestTarget(name, map));
+                        r["map"] = map;
+                        SendJson(ctx, 200, r);
+                    }
+                    catch (Exception ex)
+                    {
+                        try { SendJson(ctx, 200, Obj("path", AppEnv.SuggestTarget(name, null))); } catch (Exception) { }
+                        AppEnv.Log("ServerSync", "Vorschlag: " + ex.Message);
+                    }
+                });
+                th.IsBackground = true;
+                th.Start();
             }
             else if (path == "/api/pick")
             {
