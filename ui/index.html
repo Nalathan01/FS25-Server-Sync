@@ -76,7 +76,8 @@ button, input { font: inherit; color: inherit; }
 .srv-ico .live { position: absolute; right: -3px; top: -3px; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); border: 2px solid var(--rail); }
 .srv-name { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .srv-host { font-size: 12px; color: var(--muted); font-family: var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.add-srv { margin: 0 12px 12px; justify-content: center; }
+.add-srv { margin: 0 12px 6px; justify-content: center; }
+.import-link { margin: 0 12px 12px; text-align: center; }
 .rail-foot { border-top: 1px solid var(--line-soft); padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 12px; }
 .foot-box { background: var(--surface); border: 1px solid var(--line-soft); border-radius: 12px; padding: 10px 12px; }
 .foot-box .k { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); font-weight: 600; }
@@ -318,6 +319,7 @@ button, input { font: inherit; color: inherit; }
   <div class="rail-label" data-i18n="servers"></div>
   <div class="srv-list" id="srvList"></div>
   <button class="btn add-srv" id="addSrv"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span data-i18n="addServer"></span></button>
+  <div class="import-link"><button class="linkish" id="importSrv" data-i18n="importServer"></button><input type="file" id="importFile" accept=".fs25sync,.json" style="display:none"></div>
   <div class="rail-foot">
     <div class="foot-box">
       <div class="k" data-i18n="gameLoads"></div>
@@ -346,7 +348,8 @@ button, input { font: inherit; color: inherit; }
     </div>
   </div>
   <div class="modal-foot">
-    <button class="btn ghost danger" id="srvDelete" style="margin-right:auto" data-i18n="delete"></button>
+    <button class="btn ghost danger" id="srvDelete" data-i18n="delete"></button>
+    <button class="btn ghost" id="srvExport" style="margin-right:auto" data-i18n="exportServer"></button>
     <button class="btn ghost" data-close data-i18n="cancel"></button>
     <button class="btn primary" id="srvSave" data-i18n="save"></button>
   </div>
@@ -479,6 +482,7 @@ const I18N = {
     e_noGameSettings: "gameSettings.xml nicht gefunden: {a}", e_serverUnknown: "Server nicht gefunden.", e_busy: "Es läuft gerade schon ein Vorgang.", e_nameEmpty: "Bitte einen Namen eintragen.",
     e_targetUsed: "Dieser Zielordner gehört schon zu \"{a}\".", e_noPlan: "Bitte zuerst prüfen.", e_notSynced: "Bitte zuerst abgleichen.", e_folderMissing: "Ordner nicht gefunden.",
     e_unexpected: "Unerwarteter Fehler: {a}", errorN: "Fehler {n}",
+    importServer: "Aus Datei importieren", exportServer: "Für Mitspieler exportieren", exported: "Gespeichert als {f} in deinem Download-Ordner. Gib die Datei an deine Mitspieler weiter.", importBad: "Diese Datei ist kein Server-Eintrag von FS25 Server Sync.", imported: "Server-Eintrag geladen. Zielordner prüfen und speichern.",
     ovTitle: "Aktiven Mods-Ordner wählen", ovSub: "Aus diesem Ordner lädt das Spiel beim nächsten Start seine Mods.", ovDefault: "Standard-Mods-Ordner des Spiels", ovPrev: "Vorheriger Ordner", ovOther: "Anderen Ordner wählen", ovServer: "Server-Ordner: {n}", ovSave: "Übernehmen", ovGame: "Das Spiel läuft. Bitte erst beenden, sonst überschreibt es die Einstellung.", ovChanged: "Aktiver Mods-Ordner geändert.",
     settingsSub: "Alles, was du am Tool selbst einstellen kannst.", language: "Sprache", langAuto: "Automatisch (Windows-Sprache)", space: "Speicherplatz", spaceLine: "{n} Mods, {t}, davon {x} zusätzlich belegt", spaceNone: "Noch kein Server-Ordner abgeglichen.", spaceHint: "Verlinkte Mods (Hardlinks) belegen keinen zusätzlichen Platz, auch wenn der Explorer sie in beiden Ordnern mit voller Größe anzeigt. Zusätzlich belegt sind nur echte Dateien, zum Beispiel abweichende Server-Versionen.", archiveEmpty: "leer", archiveHint: "Eigene Dateien, die vorher in einem Zielordner lagen. Vom Server geladene Dateien landen hier nicht, sie werden gelöscht, wenn der Server sie nicht mehr nutzt.", dataDir: "Datenordner", dataDirHint: "Hier speichert das Tool Server-Liste, Hashes, Log und Icon-Zwischenspeicher.", close: "Schließen", libHintShort: "Durchsucht werden der Ordner und seine direkten Unterordner. Neue Downloads landen in _ServerDownloads.",
     archive: "Archiv", archiveInfo: "{s} in {n} Dateien", archiveInfo1: "{s} in 1 Datei", clearArchive: "Leeren", clearConfirm: "Archiv wirklich leeren? {s} in {n} Dateien werden endgültig gelöscht. Es sind Dateien, die vorher in einem Zielordner lagen und nicht vom Tool geladen wurden.", archiveCleared: "Archiv geleert.", tDelete: "vom Server geladen, wird gelöscht", remDel1: "1 vom Server geladene Datei wird gelöscht", remDelN: "{n} vom Server geladene Dateien werden gelöscht",
@@ -551,6 +555,7 @@ const I18N = {
     e_noGameSettings: "gameSettings.xml not found: {a}", e_serverUnknown: "Server not found.", e_busy: "Another operation is already running.", e_nameEmpty: "Please enter a name.",
     e_targetUsed: "This target folder already belongs to \"{a}\".", e_noPlan: "Please check first.", e_notSynced: "Please sync first.", e_folderMissing: "Folder not found.",
     e_unexpected: "Unexpected error: {a}", errorN: "Error {n}",
+    importServer: "Import from file", exportServer: "Export for other players", exported: "Saved as {f} in your downloads folder. Pass the file on to your fellow players.", importBad: "This file is not a server entry from FS25 Server Sync.", imported: "Server entry loaded. Check the target folder and save.",
     ovTitle: "Choose the active mods folder", ovSub: "The game loads its mods from this folder on its next start.", ovDefault: "Game's default mods folder", ovPrev: "Previous folder", ovOther: "Choose another folder", ovServer: "Server folder: {n}", ovSave: "Apply", ovGame: "The game is running. Please close it first, otherwise it overwrites the setting.", ovChanged: "Active mods folder changed.",
     settingsSub: "Everything you can set for the tool itself.", language: "Language", langAuto: "Automatic (Windows language)", space: "Disk space", spaceLine: "{n} mods, {t}, of which {x} take up extra space", spaceNone: "No server folder synced yet.", spaceHint: "Linked mods (hardlinks) take up no extra space, even though Explorer shows them with full size in both folders. Only real files take up extra space, for example server versions that differ from your library.", archiveEmpty: "empty", archiveHint: "Your own files that were in a target folder before. Files downloaded from the server never end up here, they are deleted once the server no longer uses them.", dataDir: "Data folder", dataDirHint: "This is where the tool stores the server list, hashes, log and icon cache.", close: "Close", libHintShort: "The folder and its direct subfolders are searched. New downloads go into _ServerDownloads.",
     archive: "Archive", archiveInfo: "{s} in {n} files", archiveInfo1: "{s} in 1 file", clearArchive: "Empty", clearConfirm: "Really empty the archive? {s} in {n} files will be deleted for good. These are files that were in a target folder before and were not downloaded by the tool.", archiveCleared: "Archive emptied.", tDelete: "downloaded from the server, will be deleted", remDel1: "1 file downloaded from the server is deleted", remDelN: "{n} files downloaded from the server are deleted",
@@ -623,6 +628,7 @@ const I18N = {
     e_noGameSettings: "gameSettings.xml introuvable : {a}", e_serverUnknown: "Serveur introuvable.", e_busy: "Une opération est déjà en cours.", e_nameEmpty: "Veuillez saisir un nom.",
     e_targetUsed: "Ce dossier cible appartient déjà à \"{a}\".", e_noPlan: "Veuillez d'abord vérifier.", e_notSynced: "Veuillez d'abord synchroniser.", e_folderMissing: "Dossier introuvable.",
     e_unexpected: "Erreur inattendue : {a}", errorN: "Erreur {n}",
+    importServer: "Importer depuis un fichier", exportServer: "Exporter pour les autres joueurs", exported: "Enregistré sous {f} dans votre dossier de téléchargements. Transmettez le fichier aux autres joueurs.", importBad: "Ce fichier n'est pas une entrée de serveur de FS25 Server Sync.", imported: "Entrée de serveur chargée. Vérifiez le dossier cible et enregistrez.",
     ovTitle: "Choisir le dossier de mods actif", ovSub: "Le jeu charge ses mods depuis ce dossier au prochain démarrage.", ovDefault: "Dossier de mods par défaut du jeu", ovPrev: "Dossier précédent", ovOther: "Choisir un autre dossier", ovServer: "Dossier serveur : {n}", ovSave: "Appliquer", ovGame: "Le jeu est lancé. Fermez-le d'abord, sinon il écrase le réglage.", ovChanged: "Dossier de mods actif modifié.",
     settingsSub: "Tout ce que vous pouvez régler pour l'outil lui-même.", language: "Langue", langAuto: "Automatique (langue de Windows)", space: "Espace disque", spaceLine: "{n} mods, {t}, dont {x} occupent de l'espace en plus", spaceNone: "Aucun dossier serveur synchronisé pour l'instant.", spaceHint: "Les mods liés (liens physiques) n'occupent pas d'espace supplémentaire, même si l'Explorateur les affiche en taille réelle dans les deux dossiers. Seuls les vrais fichiers occupent de l'espace en plus, par exemple les versions serveur différentes de votre bibliothèque.", archiveEmpty: "vide", archiveHint: "Vos propres fichiers qui se trouvaient déjà dans un dossier cible. Les fichiers téléchargés depuis le serveur n'arrivent jamais ici, ils sont supprimés dès que le serveur ne les utilise plus.", dataDir: "Dossier de données", dataDirHint: "C'est ici que l'outil enregistre la liste des serveurs, les hash, le journal et le cache d'icônes.", close: "Fermer", libHintShort: "Le dossier et ses sous-dossiers directs sont parcourus. Les nouveaux téléchargements vont dans _ServerDownloads.",
     archive: "Archive", archiveInfo: "{s} dans {n} fichiers", archiveInfo1: "{s} dans 1 fichier", clearArchive: "Vider", clearConfirm: "Vraiment vider l'archive ? {s} dans {n} fichiers seront supprimés définitivement. Ce sont des fichiers qui se trouvaient déjà dans un dossier cible et qui n'ont pas été téléchargés par l'outil.", archiveCleared: "Archive vidée.", tDelete: "téléchargé depuis le serveur, sera supprimé", remDel1: "1 fichier téléchargé depuis le serveur est supprimé", remDelN: "{n} fichiers téléchargés depuis le serveur sont supprimés",
@@ -1078,6 +1084,7 @@ function openServerModal(s) {
   $("fPass").value = "";
   $("fPass").placeholder = s && s.HasPassword ? t("fPassKeep") : t("fPass");
   $("srvDelete").style.display = s ? "" : "none";
+  $("srvExport").style.display = s ? "" : "none";
   showModal("srvModal");
   if (!s) suggestTarget();
   updateTargetHint();
@@ -1143,6 +1150,46 @@ $("fLibPick").onclick = async () => {
 $("libSave").onclick = async () => {
   try { await api("/api/library", { path: $("fLib").value }); closeModal(); await refresh(); } catch (e) { toast(e.message, true); }
 };
+function exportServer() {
+  const s = currentServer();
+  if (!s) return;
+  const data = { type: "fs25-server-sync", version: 1, name: s.Name, url: s.Url };
+  const file = (s.Name || "server").replace(/[\\/:*?"<>|]+/g, "_") + ".fs25sync";
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
+  a.download = file;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  toast(t("exported", { f: file }), "ok");
+}
+function importServerText(text) {
+  let d = null;
+  try { d = JSON.parse(text); } catch {}
+  if (!d || d.type !== "fs25-server-sync" || !d.url) { toast(t("importBad"), true); return; }
+  if (!state.st.libraryExists) { openLibModal(); return; }
+  openServerModal(null);
+  $("fName").value = String(d.name || "");
+  $("fUrl").value = String(d.url);
+  suggestTarget();
+  toast(t("imported"), "ok");
+}
+function importServerFile(f) {
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => importServerText(String(r.result || ""));
+  r.readAsText(f);
+}
+$("srvExport").onclick = exportServer;
+$("importSrv").onclick = () => { $("importFile").value = ""; $("importFile").click(); };
+$("importFile").onchange = () => importServerFile($("importFile").files[0]);
+document.addEventListener("dragover", e => { if (e.dataTransfer && [...e.dataTransfer.types].includes("Files")) e.preventDefault(); });
+document.addEventListener("drop", e => {
+  const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  if (!f || !/\.(fs25sync|json)$/i.test(f.name)) return;
+  e.preventDefault();
+  importServerFile(f);
+});
 $("addSrv").onclick = () => { if (!state.st.libraryExists) openLibModal(); else openServerModal(null); };
 
 function openApplyModal() {
