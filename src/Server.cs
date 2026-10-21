@@ -234,6 +234,18 @@ internal sealed class SyncServer
                 Activate(AppEnv.GetString(body, "id"));
                 SendJson(ctx, 200, State());
             }
+            else if (path == "/api/override")
+            {
+                Dictionary<string, object> body = ReadBody(req);
+                string dir = AppEnv.GetString(body, "path");
+                if (!string.IsNullOrEmpty(dir))
+                {
+                    dir = AppEnv.NormalizeDir(dir);
+                    if (!Directory.Exists(dir)) throw new AppError("folderMissing", dir);
+                }
+                SetOverride(string.IsNullOrEmpty(dir) ? null : dir);
+                SendJson(ctx, 200, State());
+            }
             else if (path == "/api/deactivate")
             {
                 AppEnv.SetModsDirectoryOverride(cfg.PreviousOverrideKnown ? cfg.PreviousOverride : null);
@@ -408,6 +420,7 @@ internal sealed class SyncServer
         r["gameRunning"] = AppEnv.GameRunning();
         r["library"] = cfg.Library;
         r["dataDir"] = AppEnv.DataDir;
+        r["defaultModsDir"] = Path.Combine(AppEnv.GameDocumentsDir, "mods");
         r["langSetting"] = cfg.Language ?? "";
         long archBytes = 0;
         int archCount = 0;
@@ -645,10 +658,15 @@ internal sealed class SyncServer
     {
         ServerEntry s = cfg.Find(id);
         if (string.IsNullOrEmpty(s.Target) || !Sync.HasMarker(s.Target)) throw new AppError("notSynced", null);
+        SetOverride(s.Target);
+    }
+
+    private void SetOverride(string dir)
+    {
         string current = AppEnv.ActiveModsDirectoryOverride();
         bool currentIsServer = cfg.Servers.Any(x => AppEnv.SamePath(current, x.Target));
-        AppEnv.SetModsDirectoryOverride(s.Target);
-        if (!currentIsServer)
+        AppEnv.SetModsDirectoryOverride(dir);
+        if (!currentIsServer && !AppEnv.SamePath(current, dir))
         {
             lock (Config.Sync)
             {

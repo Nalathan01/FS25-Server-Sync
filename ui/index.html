@@ -297,6 +297,13 @@ button, input { font: inherit; color: inherit; }
 .space-row { padding: 8px 10px; border-radius: 9px; background: var(--surface); border: 1px solid var(--line-soft); margin-top: 6px; }
 .space-row b { display: block; font-size: 13.5px; }
 .space-row span { font-size: 12.5px; color: var(--ink-2); }
+.ov-list { display: grid; gap: 6px; }
+.ov-item { display: grid; grid-template-columns: 20px 1fr; gap: 10px; align-items: start; padding: 10px 12px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line-soft); cursor: pointer; }
+.ov-item:hover { border-color: #3c434a; }
+.ov-item.on { border-color: var(--accent); background: rgba(63,184,169,0.08); }
+.ov-item input { accent-color: var(--accent); margin-top: 3px; }
+.ov-item b { display: block; font-size: 13.5px; }
+.ov-item span { font-family: var(--mono); font-size: 12px; color: var(--muted); word-break: break-all; }
 .tooltip { position: fixed; pointer-events: none; z-index: 50; background: #0b0c0d; border: 1px solid var(--line); padding: 7px 10px; border-radius: 9px; font-size: 12.5px; opacity: 0; transition: opacity 0.12s; }
 .tooltip.show { opacity: 1; }
 </style>
@@ -387,6 +394,16 @@ button, input { font: inherit; color: inherit; }
   <div class="modal-foot"><button class="btn primary" data-close data-i18n="close"></button></div>
 </div>
 
+<div class="modal" id="ovModal" role="dialog" aria-modal="true">
+  <div class="modal-head"><h3 data-i18n="ovTitle"></h3><p data-i18n="ovSub"></p></div>
+  <div class="modal-body"><div class="ov-list" id="ovList"></div><div class="hint" id="ovHint" style="margin-top:10px;color:#ffd27a"></div></div>
+  <div class="modal-foot">
+    <button class="btn ghost" id="ovOther" style="margin-right:auto" data-i18n="ovOther"></button>
+    <button class="btn ghost" data-close data-i18n="cancel"></button>
+    <button class="btn primary" id="ovSave" data-i18n="ovSave"></button>
+  </div>
+</div>
+
 <div class="modal" id="jobModal" role="dialog" aria-modal="true">
   <div class="modal-head"><h3 id="jobTitle"></h3><p id="jobPhase"></p></div>
   <div class="modal-body">
@@ -407,7 +424,7 @@ const token = new URLSearchParams(location.search).get("t") || "";
 const I18N = {
   de: {
     tagline: "Mods exakt wie auf dem Server", servers: "Server", addServer: "Server hinzufügen", library: "Mod-Bibliothek", change: "Ändern", open: "Öffnen",
-    gameLoads: "Spiel lädt Mods aus", defaultFolder: "Standard-Mods-Ordner", restorePrev: "Vorherigen Ordner wieder aktivieren", notSet: "nicht festgelegt",
+    gameLoads: "Aktiver Mods-Ordner im Spiel", defaultFolder: "Standard-Mods-Ordner", restorePrev: "Vorherigen Ordner wieder aktivieren", notSet: "nicht festgelegt",
     srvNew: "Server hinzufügen", srvEdit: "Server bearbeiten", srvModalSub: "Die Mods-Seite muss der Server-Admin im Webinterface freigegeben haben.",
     fName: "Name", fUrl: "Adresse der Mods-Seite", fUrlHint: "Die komplette Adresse aus dem Browser einfügen. IP und Port reichen auch.", fTarget: "Zielordner für die Server-Mods",
     browse: "Durchsuchen", delete: "Entfernen", cancel: "Abbrechen", save: "Speichern",
@@ -462,6 +479,7 @@ const I18N = {
     e_noGameSettings: "gameSettings.xml nicht gefunden: {a}", e_serverUnknown: "Server nicht gefunden.", e_busy: "Es läuft gerade schon ein Vorgang.", e_nameEmpty: "Bitte einen Namen eintragen.",
     e_targetUsed: "Dieser Zielordner gehört schon zu \"{a}\".", e_noPlan: "Bitte zuerst prüfen.", e_notSynced: "Bitte zuerst abgleichen.", e_folderMissing: "Ordner nicht gefunden.",
     e_unexpected: "Unerwarteter Fehler: {a}", errorN: "Fehler {n}",
+    ovTitle: "Aktiven Mods-Ordner wählen", ovSub: "Aus diesem Ordner lädt das Spiel beim nächsten Start seine Mods.", ovDefault: "Standard-Mods-Ordner des Spiels", ovPrev: "Vorheriger Ordner", ovOther: "Anderen Ordner wählen", ovServer: "Server-Ordner: {n}", ovSave: "Übernehmen", ovGame: "Das Spiel läuft. Bitte erst beenden, sonst überschreibt es die Einstellung.", ovChanged: "Aktiver Mods-Ordner geändert.",
     settingsSub: "Alles, was du am Tool selbst einstellen kannst.", language: "Sprache", langAuto: "Automatisch (Windows-Sprache)", space: "Speicherplatz", spaceLine: "{n} Mods, {t}, davon {x} zusätzlich belegt", spaceNone: "Noch kein Server-Ordner abgeglichen.", spaceHint: "Verlinkte Mods (Hardlinks) belegen keinen zusätzlichen Platz, auch wenn der Explorer sie in beiden Ordnern mit voller Größe anzeigt. Zusätzlich belegt sind nur echte Dateien, zum Beispiel abweichende Server-Versionen.", archiveEmpty: "leer", archiveHint: "Eigene Dateien, die vorher in einem Zielordner lagen. Vom Server geladene Dateien landen hier nicht, sie werden gelöscht, wenn der Server sie nicht mehr nutzt.", dataDir: "Datenordner", dataDirHint: "Hier speichert das Tool Server-Liste, Hashes, Log und Icon-Zwischenspeicher.", close: "Schließen", libHintShort: "Durchsucht werden der Ordner und seine direkten Unterordner. Neue Downloads landen in _ServerDownloads.",
     archive: "Archiv", archiveInfo: "{s} in {n} Dateien", archiveInfo1: "{s} in 1 Datei", clearArchive: "Leeren", clearConfirm: "Archiv wirklich leeren? {s} in {n} Dateien werden endgültig gelöscht. Es sind Dateien, die vorher in einem Zielordner lagen und nicht vom Tool geladen wurden.", archiveCleared: "Archiv geleert.", tDelete: "vom Server geladen, wird gelöscht", remDel1: "1 vom Server geladene Datei wird gelöscht", remDelN: "{n} vom Server geladene Dateien werden gelöscht",
     settings: "Einstellungen", remUnlink1: "1 Verknüpfung wird entfernt, die Datei bleibt in deiner Bibliothek", remUnlinkN: "{n} Verknüpfungen werden entfernt, die Dateien bleiben in deiner Bibliothek", remArch1: "1 Datei kommt ins Archiv (_ServerDownloads\\_Archiv)", remArchN: "{n} Dateien kommen ins Archiv (_ServerDownloads\\_Archiv)",
@@ -478,7 +496,7 @@ const I18N = {
   },
   en: {
     tagline: "Mods exactly as on the server", servers: "Servers", addServer: "Add server", library: "Mod library", change: "Change", open: "Open",
-    gameLoads: "Game loads mods from", defaultFolder: "Default mods folder", restorePrev: "Reactivate previous folder", notSet: "not set",
+    gameLoads: "Game's active mods folder", defaultFolder: "Default mods folder", restorePrev: "Reactivate previous folder", notSet: "not set",
     srvNew: "Add server", srvEdit: "Edit server", srvModalSub: "The server admin must have enabled the mods page in the web interface.",
     fName: "Name", fUrl: "Address of the mods page", fUrlHint: "Paste the full address from your browser. IP and port also work.", fTarget: "Target folder for the server mods",
     browse: "Browse", delete: "Remove", cancel: "Cancel", save: "Save",
@@ -533,6 +551,7 @@ const I18N = {
     e_noGameSettings: "gameSettings.xml not found: {a}", e_serverUnknown: "Server not found.", e_busy: "Another operation is already running.", e_nameEmpty: "Please enter a name.",
     e_targetUsed: "This target folder already belongs to \"{a}\".", e_noPlan: "Please check first.", e_notSynced: "Please sync first.", e_folderMissing: "Folder not found.",
     e_unexpected: "Unexpected error: {a}", errorN: "Error {n}",
+    ovTitle: "Choose the active mods folder", ovSub: "The game loads its mods from this folder on its next start.", ovDefault: "Game's default mods folder", ovPrev: "Previous folder", ovOther: "Choose another folder", ovServer: "Server folder: {n}", ovSave: "Apply", ovGame: "The game is running. Please close it first, otherwise it overwrites the setting.", ovChanged: "Active mods folder changed.",
     settingsSub: "Everything you can set for the tool itself.", language: "Language", langAuto: "Automatic (Windows language)", space: "Disk space", spaceLine: "{n} mods, {t}, of which {x} take up extra space", spaceNone: "No server folder synced yet.", spaceHint: "Linked mods (hardlinks) take up no extra space, even though Explorer shows them with full size in both folders. Only real files take up extra space, for example server versions that differ from your library.", archiveEmpty: "empty", archiveHint: "Your own files that were in a target folder before. Files downloaded from the server never end up here, they are deleted once the server no longer uses them.", dataDir: "Data folder", dataDirHint: "This is where the tool stores the server list, hashes, log and icon cache.", close: "Close", libHintShort: "The folder and its direct subfolders are searched. New downloads go into _ServerDownloads.",
     archive: "Archive", archiveInfo: "{s} in {n} files", archiveInfo1: "{s} in 1 file", clearArchive: "Empty", clearConfirm: "Really empty the archive? {s} in {n} files will be deleted for good. These are files that were in a target folder before and were not downloaded by the tool.", archiveCleared: "Archive emptied.", tDelete: "downloaded from the server, will be deleted", remDel1: "1 file downloaded from the server is deleted", remDelN: "{n} files downloaded from the server are deleted",
     settings: "Settings", remUnlink1: "1 link is removed, the file stays in your library", remUnlinkN: "{n} links are removed, the files stay in your library", remArch1: "1 file is moved to the archive (_ServerDownloads\\_Archiv)", remArchN: "{n} files are moved to the archive (_ServerDownloads\\_Archiv)",
@@ -549,7 +568,7 @@ const I18N = {
   },
   fr: {
     tagline: "Les mods exactement comme sur le serveur", servers: "Serveurs", addServer: "Ajouter un serveur", library: "Bibliothèque de mods", change: "Modifier", open: "Ouvrir",
-    gameLoads: "Le jeu charge les mods depuis", defaultFolder: "Dossier de mods par défaut", restorePrev: "Réactiver le dossier précédent", notSet: "non défini",
+    gameLoads: "Dossier de mods actif du jeu", defaultFolder: "Dossier de mods par défaut", restorePrev: "Réactiver le dossier précédent", notSet: "non défini",
     srvNew: "Ajouter un serveur", srvEdit: "Modifier le serveur", srvModalSub: "L'administrateur du serveur doit avoir activé la page des mods dans l'interface web.",
     fName: "Nom", fUrl: "Adresse de la page des mods", fUrlHint: "Collez l'adresse complète depuis votre navigateur. L'IP et le port suffisent aussi.", fTarget: "Dossier cible pour les mods du serveur",
     browse: "Parcourir", delete: "Retirer", cancel: "Annuler", save: "Enregistrer",
@@ -604,6 +623,7 @@ const I18N = {
     e_noGameSettings: "gameSettings.xml introuvable : {a}", e_serverUnknown: "Serveur introuvable.", e_busy: "Une opération est déjà en cours.", e_nameEmpty: "Veuillez saisir un nom.",
     e_targetUsed: "Ce dossier cible appartient déjà à \"{a}\".", e_noPlan: "Veuillez d'abord vérifier.", e_notSynced: "Veuillez d'abord synchroniser.", e_folderMissing: "Dossier introuvable.",
     e_unexpected: "Erreur inattendue : {a}", errorN: "Erreur {n}",
+    ovTitle: "Choisir le dossier de mods actif", ovSub: "Le jeu charge ses mods depuis ce dossier au prochain démarrage.", ovDefault: "Dossier de mods par défaut du jeu", ovPrev: "Dossier précédent", ovOther: "Choisir un autre dossier", ovServer: "Dossier serveur : {n}", ovSave: "Appliquer", ovGame: "Le jeu est lancé. Fermez-le d'abord, sinon il écrase le réglage.", ovChanged: "Dossier de mods actif modifié.",
     settingsSub: "Tout ce que vous pouvez régler pour l'outil lui-même.", language: "Langue", langAuto: "Automatique (langue de Windows)", space: "Espace disque", spaceLine: "{n} mods, {t}, dont {x} occupent de l'espace en plus", spaceNone: "Aucun dossier serveur synchronisé pour l'instant.", spaceHint: "Les mods liés (liens physiques) n'occupent pas d'espace supplémentaire, même si l'Explorateur les affiche en taille réelle dans les deux dossiers. Seuls les vrais fichiers occupent de l'espace en plus, par exemple les versions serveur différentes de votre bibliothèque.", archiveEmpty: "vide", archiveHint: "Vos propres fichiers qui se trouvaient déjà dans un dossier cible. Les fichiers téléchargés depuis le serveur n'arrivent jamais ici, ils sont supprimés dès que le serveur ne les utilise plus.", dataDir: "Dossier de données", dataDirHint: "C'est ici que l'outil enregistre la liste des serveurs, les hash, le journal et le cache d'icônes.", close: "Fermer", libHintShort: "Le dossier et ses sous-dossiers directs sont parcourus. Les nouveaux téléchargements vont dans _ServerDownloads.",
     archive: "Archive", archiveInfo: "{s} dans {n} fichiers", archiveInfo1: "{s} dans 1 fichier", clearArchive: "Vider", clearConfirm: "Vraiment vider l'archive ? {s} dans {n} fichiers seront supprimés définitivement. Ce sont des fichiers qui se trouvaient déjà dans un dossier cible et qui n'ont pas été téléchargés par l'outil.", archiveCleared: "Archive vidée.", tDelete: "téléchargé depuis le serveur, sera supprimé", remDel1: "1 fichier téléchargé depuis le serveur est supprimé", remDelN: "{n} fichiers téléchargés depuis le serveur sont supprimés",
     settings: "Paramètres", remUnlink1: "1 lien est retiré, le fichier reste dans votre bibliothèque", remUnlinkN: "{n} liens sont retirés, les fichiers restent dans votre bibliothèque", remArch1: "1 fichier est déplacé vers l'archive (_ServerDownloads\\_Archiv)", remArchN: "{n} fichiers sont déplacés vers l'archive (_ServerDownloads\\_Archiv)",
@@ -726,8 +746,8 @@ function renderRail() {
   $("spaceList").innerHTML = used.length ? used.map(x => `<div class="space-row"><b>${esc(x.Name)}</b><span>${esc(t("spaceLine", { n: fmt(x.UsageCount), t: fmtBytes(x.UsageTotal), x: fmtBytes(x.UsageExtra) }))}</span></div>`).join("") : `<div class="hint">${esc(t("spaceNone"))}</div>`;
   $("libOpen").disabled = !st.libraryExists;
   $("activePath").textContent = st.activeOverride || t("defaultFolder");
-  $("activeActs").innerHTML = st.canRestore ? `<button class="btn small" id="restoreBtn">${esc(t("restorePrev"))}</button>` : "";
-  if (st.canRestore) $("restoreBtn").onclick = restorePrevious;
+  $("activeActs").innerHTML = `<button class="btn small" id="ovBtn">${esc(t("change"))}</button>`;
+  $("ovBtn").onclick = openOverride;
 }
 
 function counts(plan) {
@@ -882,6 +902,46 @@ async function forgetAndCheck(body) {
 }
 $("rvGo").onclick = () => forgetAndCheck({ mods: [...rv.sel] });
 $("rvAll").onclick = () => { if (confirm(t("rvAllConfirm"))) forgetAndCheck({ all: true }); };
+
+const ov = { sel: null, custom: null };
+function overrideOptions() {
+  const st = state.st;
+  const opts = [{ path: "", label: t("ovDefault"), sub: st.defaultModsDir }];
+  for (const s of st.servers) if (s.Synced) opts.push({ path: s.Target, label: t("ovServer", { n: s.Name }), sub: s.Target });
+  if (st.previousOverride && !opts.some(o => o.path.toLowerCase() === st.previousOverride.toLowerCase())) opts.push({ path: st.previousOverride, label: t("ovPrev"), sub: st.previousOverride });
+  const cur = st.activeOverride || "";
+  if (cur && !opts.some(o => o.path.toLowerCase() === cur.toLowerCase())) opts.push({ path: cur, label: t("gameLoads"), sub: cur });
+  if (ov.custom && !opts.some(o => o.path.toLowerCase() === ov.custom.toLowerCase())) opts.push({ path: ov.custom, label: t("ovOther"), sub: ov.custom });
+  return opts;
+}
+function renderOverride() {
+  const list = overrideOptions();
+  $("ovList").innerHTML = list.map((o, i) => `<label class="ov-item ${o.path.toLowerCase() === (ov.sel || "").toLowerCase() ? "on" : ""}"><input type="radio" name="ov" data-i="${i}" ${o.path.toLowerCase() === (ov.sel || "").toLowerCase() ? "checked" : ""}><div><b>${esc(o.label)}</b><span>${esc(o.sub || "")}</span></div></label>`).join("");
+  $("ovList").querySelectorAll("input").forEach(r => r.onchange = () => { ov.sel = list[Number(r.dataset.i)].path; renderOverride(); });
+  $("ovHint").textContent = state.gameRunning ? t("ovGame") : "";
+  $("ovSave").disabled = state.gameRunning || (ov.sel || "").toLowerCase() === (state.st.activeOverride || "").toLowerCase();
+}
+async function openOverride() {
+  try { await loadState(); } catch {}
+  ov.sel = state.st.activeOverride || "";
+  ov.custom = null;
+  renderOverride();
+  showModal("ovModal");
+}
+$("ovOther").onclick = async () => {
+  try {
+    const r = await api("/api/pick", { title: t("ovTitle"), start: ov.sel || state.st.defaultModsDir });
+    if (r.path) { ov.custom = r.path; ov.sel = r.path; renderOverride(); }
+  } catch (e) { toast(e.message, true); }
+};
+$("ovSave").onclick = async () => {
+  try {
+    await api("/api/override", { path: ov.sel || "" });
+    closeModal();
+    await refresh();
+    toast(t("ovChanged"), "ok");
+  } catch (e) { toast(e.message, true); }
+};
 
 async function launch() {
   try { await api("/api/launch", {}); } catch (e) { toast(e.message, true); }
