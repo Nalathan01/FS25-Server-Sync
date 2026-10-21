@@ -40,6 +40,7 @@ internal sealed class ServerEntry
 internal sealed class Config
 {
     public string Library;
+    public string Language;
     public string PreviousOverride;
     public bool PreviousOverrideKnown;
     public List<ServerEntry> Servers = new List<ServerEntry>();

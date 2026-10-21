@@ -283,6 +283,20 @@ button, input { font: inherit; color: inherit; }
 .rv-item .t { font-weight: 600; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rv-item .f { font-family: var(--mono); font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rv-item .v { font-size: 12px; color: var(--ink-2); }
+.brand { position: relative; }
+.gear { margin-left: auto; position: relative; }
+.gear .dot { position: absolute; right: 4px; top: 4px; width: 8px; height: 8px; border-radius: 50%; background: var(--warning); display: none; }
+.gear.flag .dot { display: block; }
+.set-sec { padding: 14px 0; border-bottom: 1px solid var(--line-soft); }
+.set-sec:last-child { border-bottom: 0; }
+.set-sec h4 { margin: 0 0 6px; font-size: 13px; letter-spacing: 0.6px; text-transform: uppercase; color: var(--muted); }
+.set-sec .v { font-family: var(--mono); font-size: 12.5px; color: var(--ink-2); word-break: break-all; }
+.set-sec .hint { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+.set-sec .acts { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.set-sec select { height: 36px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 0 10px; font: inherit; }
+.space-row { padding: 8px 10px; border-radius: 9px; background: var(--surface); border: 1px solid var(--line-soft); margin-top: 6px; }
+.space-row b { display: block; font-size: 13.5px; }
+.space-row span { font-size: 12.5px; color: var(--ink-2); }
 .tooltip { position: fixed; pointer-events: none; z-index: 50; background: #0b0c0d; border: 1px solid var(--line); padding: 7px 10px; border-radius: 9px; font-size: 12.5px; opacity: 0; transition: opacity 0.12s; }
 .tooltip.show { opacity: 1; }
 </style>
@@ -292,30 +306,16 @@ button, input { font: inherit; color: inherit; }
   <div class="brand">
     <div class="brand-mark"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#04201d" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="6" rx="1.5"/><rect x="4" y="11" width="16" height="6" rx="1.5"/><path d="M12 17v4m-3-2 3 3 3-3"/></svg></div>
     <div><h1>FS25 Server Sync</h1><p data-i18n="tagline"></p></div>
+    <button class="icon-btn gear" id="openSettings"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span class="dot"></span></button>
   </div>
   <div class="rail-label" data-i18n="servers"></div>
   <div class="srv-list" id="srvList"></div>
   <button class="btn add-srv" id="addSrv"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span data-i18n="addServer"></span></button>
   <div class="rail-foot">
     <div class="foot-box">
-      <div class="k" data-i18n="library"></div>
-      <div class="v" id="libPath"></div>
-      <div class="acts"><button class="btn small" id="libChange" data-i18n="change"></button><button class="btn small ghost" id="libOpen" data-i18n="open"></button></div>
-    </div>
-    <div class="foot-box">
       <div class="k" data-i18n="gameLoads"></div>
       <div class="v" id="activePath"></div>
       <div class="acts" id="activeActs"></div>
-    </div>
-    <div class="foot-box" id="archBox" style="display:none">
-      <div class="k" data-i18n="archive"></div>
-      <div class="v" id="archInfo"></div>
-      <div class="acts"><button class="btn small ghost" id="archOpen" data-i18n="open"></button><button class="btn small ghost danger" id="archClear" data-i18n="clearArchive"></button></div>
-    </div>
-    <div class="foot-box">
-      <div class="k" data-i18n="settings"></div>
-      <div class="v" id="dataPath"></div>
-      <div class="acts"><button class="btn small ghost" id="dataOpen" data-i18n="open"></button></div>
     </div>
   </div>
 </aside>
@@ -370,6 +370,21 @@ button, input { font: inherit; color: inherit; }
     <button class="btn ghost" data-close data-i18n="cancel"></button>
     <button class="btn primary" id="rvGo" data-i18n="rvSelected"></button>
   </div>
+</div>
+
+<div class="modal" id="setModal" role="dialog" aria-modal="true">
+  <div class="modal-head"><h3 data-i18n="settings"></h3><p data-i18n="settingsSub"></p></div>
+  <div class="modal-body">
+    <div class="set-sec"><h4 data-i18n="library"></h4><div class="v" id="libPath"></div><div class="hint" data-i18n="libHintShort"></div>
+      <div class="acts"><button class="btn small" id="libChange" data-i18n="change"></button><button class="btn small ghost" id="libOpen" data-i18n="open"></button></div></div>
+    <div class="set-sec"><h4 data-i18n="language"></h4><select id="langSel"><option value="" data-i18n="langAuto"></option><option value="de">Deutsch</option><option value="en">English</option><option value="fr">Français</option></select></div>
+    <div class="set-sec"><h4 data-i18n="space"></h4><div id="spaceList"></div><div class="hint" data-i18n="spaceHint"></div></div>
+    <div class="set-sec"><h4 data-i18n="archive"></h4><div class="v" id="archInfo"></div><div class="hint" data-i18n="archiveHint"></div>
+      <div class="acts"><button class="btn small ghost" id="archOpen" data-i18n="open"></button><button class="btn small ghost danger" id="archClear" data-i18n="clearArchive"></button></div></div>
+    <div class="set-sec"><h4 data-i18n="dataDir"></h4><div class="v" id="dataPath"></div><div class="hint" data-i18n="dataDirHint"></div>
+      <div class="acts"><button class="btn small ghost" id="dataOpen" data-i18n="open"></button></div></div>
+  </div>
+  <div class="modal-foot"><button class="btn primary" data-close data-i18n="close"></button></div>
 </div>
 
 <div class="modal" id="jobModal" role="dialog" aria-modal="true">
@@ -447,6 +462,7 @@ const I18N = {
     e_noGameSettings: "gameSettings.xml nicht gefunden: {a}", e_serverUnknown: "Server nicht gefunden.", e_busy: "Es läuft gerade schon ein Vorgang.", e_nameEmpty: "Bitte einen Namen eintragen.",
     e_targetUsed: "Dieser Zielordner gehört schon zu \"{a}\".", e_noPlan: "Bitte zuerst prüfen.", e_notSynced: "Bitte zuerst abgleichen.", e_folderMissing: "Ordner nicht gefunden.",
     e_unexpected: "Unerwarteter Fehler: {a}", errorN: "Fehler {n}",
+    settingsSub: "Alles, was du am Tool selbst einstellen kannst.", language: "Sprache", langAuto: "Automatisch (Windows-Sprache)", space: "Speicherplatz", spaceLine: "{n} Mods, {t}, davon {x} zusätzlich belegt", spaceNone: "Noch kein Server-Ordner abgeglichen.", spaceHint: "Verlinkte Mods (Hardlinks) belegen keinen zusätzlichen Platz, auch wenn der Explorer sie in beiden Ordnern mit voller Größe anzeigt. Zusätzlich belegt sind nur echte Dateien, zum Beispiel abweichende Server-Versionen.", archiveEmpty: "leer", archiveHint: "Eigene Dateien, die vorher in einem Zielordner lagen. Vom Server geladene Dateien landen hier nicht, sie werden gelöscht, wenn der Server sie nicht mehr nutzt.", dataDir: "Datenordner", dataDirHint: "Hier speichert das Tool Server-Liste, Hashes, Log und Icon-Zwischenspeicher.", close: "Schließen", libHintShort: "Durchsucht werden der Ordner und seine direkten Unterordner. Neue Downloads landen in _ServerDownloads.",
     archive: "Archiv", archiveInfo: "{s} in {n} Dateien", archiveInfo1: "{s} in 1 Datei", clearArchive: "Leeren", clearConfirm: "Archiv wirklich leeren? {s} in {n} Dateien werden endgültig gelöscht. Es sind Dateien, die vorher in einem Zielordner lagen und nicht vom Tool geladen wurden.", archiveCleared: "Archiv geleert.", tDelete: "vom Server geladen, wird gelöscht", remDel1: "1 vom Server geladene Datei wird gelöscht", remDelN: "{n} vom Server geladene Dateien werden gelöscht",
     settings: "Einstellungen", remUnlink1: "1 Verknüpfung wird entfernt, die Datei bleibt in deiner Bibliothek", remUnlinkN: "{n} Verknüpfungen werden entfernt, die Dateien bleiben in deiner Bibliothek", remArch1: "1 Datei kommt ins Archiv (_ServerDownloads\\_Archiv)", remArchN: "{n} Dateien kommen ins Archiv (_ServerDownloads\\_Archiv)",
     dlcPill: "DLCs: {a} von {b} vorhanden", dlcPillUnknown: "Server nutzt {b} DLCs", alertDlcMissing: "Dir fehlen DLCs, die der Server nutzt: {x}", alertDlcMissingText: "Ohne sie kannst du dem Server nicht beitreten. DLCs kann das Tool nicht herunterladen, sie müssen gekauft und installiert sein. Danach erneut prüfen.", alertDlcUnknown: "Der Server nutzt diese DLCs: {x}", alertDlcUnknownText: "Deine Spielinstallation wurde nicht gefunden, deshalb kann das Tool nicht prüfen, ob du sie hast. Ohne sie ist kein Beitritt möglich.", h1Dlc: "Installiere zuerst die fehlenden DLCs, danach erneut prüfen.",
@@ -517,6 +533,7 @@ const I18N = {
     e_noGameSettings: "gameSettings.xml not found: {a}", e_serverUnknown: "Server not found.", e_busy: "Another operation is already running.", e_nameEmpty: "Please enter a name.",
     e_targetUsed: "This target folder already belongs to \"{a}\".", e_noPlan: "Please check first.", e_notSynced: "Please sync first.", e_folderMissing: "Folder not found.",
     e_unexpected: "Unexpected error: {a}", errorN: "Error {n}",
+    settingsSub: "Everything you can set for the tool itself.", language: "Language", langAuto: "Automatic (Windows language)", space: "Disk space", spaceLine: "{n} mods, {t}, of which {x} take up extra space", spaceNone: "No server folder synced yet.", spaceHint: "Linked mods (hardlinks) take up no extra space, even though Explorer shows them with full size in both folders. Only real files take up extra space, for example server versions that differ from your library.", archiveEmpty: "empty", archiveHint: "Your own files that were in a target folder before. Files downloaded from the server never end up here, they are deleted once the server no longer uses them.", dataDir: "Data folder", dataDirHint: "This is where the tool stores the server list, hashes, log and icon cache.", close: "Close", libHintShort: "The folder and its direct subfolders are searched. New downloads go into _ServerDownloads.",
     archive: "Archive", archiveInfo: "{s} in {n} files", archiveInfo1: "{s} in 1 file", clearArchive: "Empty", clearConfirm: "Really empty the archive? {s} in {n} files will be deleted for good. These are files that were in a target folder before and were not downloaded by the tool.", archiveCleared: "Archive emptied.", tDelete: "downloaded from the server, will be deleted", remDel1: "1 file downloaded from the server is deleted", remDelN: "{n} files downloaded from the server are deleted",
     settings: "Settings", remUnlink1: "1 link is removed, the file stays in your library", remUnlinkN: "{n} links are removed, the files stay in your library", remArch1: "1 file is moved to the archive (_ServerDownloads\\_Archiv)", remArchN: "{n} files are moved to the archive (_ServerDownloads\\_Archiv)",
     dlcPill: "DLCs: {a} of {b} installed", dlcPillUnknown: "Server uses {b} DLCs", alertDlcMissing: "You are missing DLCs the server uses: {x}", alertDlcMissingText: "You cannot join the server without them. The tool cannot download DLCs, they have to be bought and installed. Check again afterwards.", alertDlcUnknown: "The server uses these DLCs: {x}", alertDlcUnknownText: "Your game installation was not found, so the tool cannot check whether you own them. Joining is not possible without them.", h1Dlc: "Install the missing DLCs first, then check again.",
@@ -587,6 +604,7 @@ const I18N = {
     e_noGameSettings: "gameSettings.xml introuvable : {a}", e_serverUnknown: "Serveur introuvable.", e_busy: "Une opération est déjà en cours.", e_nameEmpty: "Veuillez saisir un nom.",
     e_targetUsed: "Ce dossier cible appartient déjà à \"{a}\".", e_noPlan: "Veuillez d'abord vérifier.", e_notSynced: "Veuillez d'abord synchroniser.", e_folderMissing: "Dossier introuvable.",
     e_unexpected: "Erreur inattendue : {a}", errorN: "Erreur {n}",
+    settingsSub: "Tout ce que vous pouvez régler pour l'outil lui-même.", language: "Langue", langAuto: "Automatique (langue de Windows)", space: "Espace disque", spaceLine: "{n} mods, {t}, dont {x} occupent de l'espace en plus", spaceNone: "Aucun dossier serveur synchronisé pour l'instant.", spaceHint: "Les mods liés (liens physiques) n'occupent pas d'espace supplémentaire, même si l'Explorateur les affiche en taille réelle dans les deux dossiers. Seuls les vrais fichiers occupent de l'espace en plus, par exemple les versions serveur différentes de votre bibliothèque.", archiveEmpty: "vide", archiveHint: "Vos propres fichiers qui se trouvaient déjà dans un dossier cible. Les fichiers téléchargés depuis le serveur n'arrivent jamais ici, ils sont supprimés dès que le serveur ne les utilise plus.", dataDir: "Dossier de données", dataDirHint: "C'est ici que l'outil enregistre la liste des serveurs, les hash, le journal et le cache d'icônes.", close: "Fermer", libHintShort: "Le dossier et ses sous-dossiers directs sont parcourus. Les nouveaux téléchargements vont dans _ServerDownloads.",
     archive: "Archive", archiveInfo: "{s} dans {n} fichiers", archiveInfo1: "{s} dans 1 fichier", clearArchive: "Vider", clearConfirm: "Vraiment vider l'archive ? {s} dans {n} fichiers seront supprimés définitivement. Ce sont des fichiers qui se trouvaient déjà dans un dossier cible et qui n'ont pas été téléchargés par l'outil.", archiveCleared: "Archive vidée.", tDelete: "téléchargé depuis le serveur, sera supprimé", remDel1: "1 fichier téléchargé depuis le serveur est supprimé", remDelN: "{n} fichiers téléchargés depuis le serveur sont supprimés",
     settings: "Paramètres", remUnlink1: "1 lien est retiré, le fichier reste dans votre bibliothèque", remUnlinkN: "{n} liens sont retirés, les fichiers restent dans votre bibliothèque", remArch1: "1 fichier est déplacé vers l'archive (_ServerDownloads\\_Archiv)", remArchN: "{n} fichiers sont déplacés vers l'archive (_ServerDownloads\\_Archiv)",
     dlcPill: "DLC : {a} sur {b} installés", dlcPillUnknown: "Le serveur utilise {b} DLC", alertDlcMissing: "Il vous manque des DLC utilisés par le serveur : {x}", alertDlcMissingText: "Sans eux, impossible de rejoindre le serveur. L'outil ne peut pas télécharger de DLC, ils doivent être achetés et installés. Vérifiez à nouveau ensuite.", alertDlcUnknown: "Le serveur utilise ces DLC : {x}", alertDlcUnknownText: "Votre installation du jeu est introuvable, l'outil ne peut donc pas vérifier si vous les possédez. Impossible de rejoindre sans eux.", h1Dlc: "Installez d'abord les DLC manquants, puis vérifiez à nouveau.",
@@ -698,8 +716,14 @@ function renderRail() {
   lib.textContent = st.library || t("notSet");
   lib.classList.toggle("missing", !st.libraryExists);
   $("dataPath").textContent = st.dataDir || "";
-  $("archBox").style.display = st.archiveCount ? "" : "none";
-  if (st.archiveCount) $("archInfo").textContent = st.archiveCount === 1 ? t("archiveInfo1", { s: fmtBytes(st.archiveBytes) }) : t("archiveInfo", { s: fmtBytes(st.archiveBytes), n: fmt(st.archiveCount) });
+  $("archInfo").textContent = !st.archiveCount ? t("archiveEmpty") : st.archiveCount === 1 ? t("archiveInfo1", { s: fmtBytes(st.archiveBytes) }) : t("archiveInfo", { s: fmtBytes(st.archiveBytes), n: fmt(st.archiveCount) });
+  $("archOpen").disabled = !st.archiveCount;
+  $("archClear").disabled = !st.archiveCount;
+  $("openSettings").classList.toggle("flag", !!st.archiveCount);
+  $("openSettings").title = t("settings");
+  $("langSel").value = st.langSetting || "";
+  const used = st.servers.filter(x => x.UsageCount);
+  $("spaceList").innerHTML = used.length ? used.map(x => `<div class="space-row"><b>${esc(x.Name)}</b><span>${esc(t("spaceLine", { n: fmt(x.UsageCount), t: fmtBytes(x.UsageTotal), x: fmtBytes(x.UsageExtra) }))}</span></div>`).join("") : `<div class="hint">${esc(t("spaceNone"))}</div>`;
   $("libOpen").disabled = !st.libraryExists;
   $("activePath").textContent = st.activeOverride || t("defaultFolder");
   $("activeActs").innerHTML = st.canRestore ? `<button class="btn small" id="restoreBtn">${esc(t("restorePrev"))}</button>` : "";
@@ -1033,6 +1057,16 @@ function openLibModal() {
 }
 $("libChange").onclick = openLibModal;
 $("libOpen").onclick = () => api("/api/open", { path: state.st.library }).catch(e => toast(e.message, true));
+$("openSettings").onclick = async () => { try { await loadState(); renderRail(); } catch {} showModal("setModal"); };
+$("langSel").onchange = async () => {
+  try {
+    state.st = await api("/api/settings/language", { lang: $("langSel").value });
+    LANG = I18N[state.st.lang] ? state.st.lang : "de";
+    applyStaticTexts();
+    renderRail();
+    renderMain();
+  } catch (e) { toast(e.message, true); }
+};
 $("dataOpen").onclick = () => api("/api/open", { path: state.st.dataDir }).catch(e => toast(e.message, true));
 $("archOpen").onclick = () => api("/api/open", { path: state.st.archiveDir }).catch(e => toast(e.message, true));
 $("archClear").onclick = async () => {
@@ -1191,6 +1225,7 @@ async function ping() {
   const urlLang = new URLSearchParams(location.search).get("lang");
   const first = await ping();
   LANG = I18N[urlLang] ? urlLang : (first && I18N[first.lang] ? first.lang : "de");
+  document.querySelectorAll("#langSel option").forEach(o => { if (o.value === "") o.dataset.i18n = "langAuto"; });
   applyStaticTexts();
   setInterval(ping, 4000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) ping(); });

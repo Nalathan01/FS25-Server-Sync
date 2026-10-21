@@ -131,7 +131,7 @@ internal sealed class SyncServer
                 firstPingSeen = true;
                 Dictionary<string, object> r = Obj("ok", true);
                 r["gameRunning"] = AppEnv.GameRunning();
-                r["lang"] = uiLang;
+                r["lang"] = Lang();
                 SendJson(ctx, 200, r);
             }
             else if (path == "/api/state") SendJson(ctx, 200, State());
@@ -274,6 +274,14 @@ internal sealed class SyncServer
                 cfg.Save();
                 SendJson(ctx, 200, Obj("removed", removed));
             }
+            else if (path == "/api/settings/language")
+            {
+                Dictionary<string, object> body = ReadBody(req);
+                string l = AppEnv.GetString(body, "lang");
+                lock (Config.Sync) cfg.Language = (l == "de" || l == "en" || l == "fr") ? l : null;
+                cfg.Save();
+                SendJson(ctx, 200, State());
+            }
             else if (path == "/api/archive/clear")
             {
                 EnsureIdle();
@@ -346,6 +354,28 @@ internal sealed class SyncServer
         if (job != null && !job.Finished) throw new AppError("busy", null);
     }
 
+    private string Lang()
+    {
+        string l = cfg.Language;
+        return (l == "de" || l == "en" || l == "fr") ? l : uiLang;
+    }
+
+    private static void TargetUsage(string dir, out int count, out long total, out long extra)
+    {
+        count = 0;
+        total = 0;
+        extra = 0;
+        if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir)) return;
+        foreach (string f in Directory.GetFiles(dir, "*.zip"))
+        {
+            long len;
+            try { len = new FileInfo(f).Length; } catch (Exception) { continue; }
+            count++;
+            total += len;
+            if (NativeLinks.LinkCount(f) <= 1) extra += len;
+        }
+    }
+
     private Dictionary<string, object> State()
     {
         string active = AppEnv.ActiveModsDirectoryOverride();
@@ -365,13 +395,20 @@ internal sealed class SyncServer
             d["SameVolume"] = NativeLinks.SameVolume(cfg.Library, s.Target);
             d["IsActive"] = AppEnv.SamePath(active, s.Target);
             d["HasPlan"] = plans.ContainsKey(s.Id);
+            int uc;
+            long ut, ux;
+            TargetUsage(s.Target, out uc, out ut, out ux);
+            d["UsageCount"] = uc;
+            d["UsageTotal"] = ut;
+            d["UsageExtra"] = ux;
             servers.Add(d);
         }
         Dictionary<string, object> r = new Dictionary<string, object>();
-        r["lang"] = uiLang;
+        r["lang"] = Lang();
         r["gameRunning"] = AppEnv.GameRunning();
         r["library"] = cfg.Library;
         r["dataDir"] = AppEnv.DataDir;
+        r["langSetting"] = cfg.Language ?? "";
         long archBytes = 0;
         int archCount = 0;
         string archDir = string.IsNullOrEmpty(cfg.Library) ? null : Sync.ArchiveDir(cfg.Library);
