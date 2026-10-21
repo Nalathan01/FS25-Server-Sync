@@ -85,6 +85,17 @@ Questions, ideas or a server where something does not work? Open an [issue](http
 * Website: https://www.nalathan.de/
 * YouTube: https://www.youtube.com/@nalathangaming
 
+## Code signing policy
+
+Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).
+
+* Committers and reviewers: [Nalathan01](https://github.com/Nalathan01)
+* Approvers: [Nalathan01](https://github.com/Nalathan01)
+
+Only builds made automatically by GitHub Actions from the source code in this repository are signed.
+
+Privacy: this program only connects to the servers you add yourself. It does not send any other information to networked systems.
+
 ## License
 
 MIT, see [LICENSE](LICENSE).
