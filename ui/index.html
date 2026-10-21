@@ -1,0 +1,1173 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FS25 Server Sync</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%233fb8a9'/%3E%3Crect x='7' y='7' width='18' height='5' rx='1.5' fill='none' stroke='%2304201d' stroke-width='2'/%3E%3Crect x='7' y='14' width='18' height='5' rx='1.5' fill='none' stroke='%2304201d' stroke-width='2'/%3E%3Cpath d='M16 21v5m-3-2 3 3 3-3' stroke='%2304201d' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #111315;
+  --rail: #16181b;
+  --surface: #1b1e21;
+  --surface-2: #22262a;
+  --surface-3: #2a2f34;
+  --line: #2c3136;
+  --line-soft: #23272b;
+  --ink: #f0efec;
+  --ink-2: #c3c2b7;
+  --muted: #8a8d88;
+  --accent: #3fb8a9;
+  --accent-hover: #55c7b9;
+  --accent-soft: rgba(63, 184, 169, 0.14);
+  --accent-ink: #04201d;
+  --s-download: #3987e5;
+  --s-update: #c98500;
+  --s-link: #199e70;
+  --s-check: #8b7be8;
+  --s-remove: #d55181;
+  --s-nodl: #d95926;
+  --s-error: #d03b3b;
+  --s-ok: #5f625d;
+  --radius: 14px;
+  --font: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  --mono: "Cascadia Mono", Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.45;
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  overflow: hidden;
+}
+button, input { font: inherit; color: inherit; }
+::selection { background: var(--accent); color: var(--accent-ink); }
+::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 8px; border: 3px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-track { background: transparent; }
+
+.rail { background: var(--rail); border-right: 1px solid var(--line-soft); display: flex; flex-direction: column; min-height: 0; }
+.brand { display: flex; align-items: center; gap: 12px; padding: 22px 20px 18px; }
+.brand-mark {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: linear-gradient(145deg, #5fd0c2, #2a978a);
+  display: grid; place-items: center;
+  box-shadow: 0 6px 18px rgba(63, 184, 169, 0.25), inset 0 1px 0 rgba(255,255,255,0.3);
+}
+.brand h1 { font-family: var(--font-display); font-size: 17px; font-weight: 650; margin: 0; letter-spacing: 0.2px; }
+.brand p { margin: 0; font-size: 12px; color: var(--muted); }
+.rail-label { padding: 6px 20px 8px; font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.srv-list { overflow-y: auto; padding: 0 12px 10px; display: flex; flex-direction: column; gap: 6px; flex: 1; min-height: 0; }
+.srv {
+  display: grid; grid-template-columns: 40px 1fr; gap: 12px; align-items: center;
+  padding: 10px; border-radius: 12px; border: 1px solid transparent; background: transparent;
+  cursor: pointer; text-align: left; transition: background 0.15s, border-color 0.15s; width: 100%;
+}
+.srv:hover { background: var(--surface); }
+.srv.active { background: var(--surface-2); border-color: rgba(63, 184, 169, 0.55); box-shadow: inset 3px 0 0 var(--accent); }
+.srv-ico { width: 40px; height: 40px; border-radius: 10px; background: var(--surface-3); display: grid; place-items: center; color: var(--ink-2); position: relative; }
+.srv-ico .live { position: absolute; right: -3px; top: -3px; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); border: 2px solid var(--rail); }
+.srv-name { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.srv-host { font-size: 12px; color: var(--muted); font-family: var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.add-srv { margin: 0 12px 12px; justify-content: center; }
+.rail-foot { border-top: 1px solid var(--line-soft); padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 12px; }
+.foot-box { background: var(--surface); border: 1px solid var(--line-soft); border-radius: 12px; padding: 10px 12px; }
+.foot-box .k { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.foot-box .v { font-family: var(--mono); font-size: 12px; color: var(--ink-2); margin-top: 3px; word-break: break-all; }
+.foot-box .v.missing { color: #ff9b9b; }
+.foot-box .acts { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.foot-box .acts:empty { display: none; }
+
+.main { overflow-y: auto; min-height: 0; position: relative; }
+.hero {
+  position: relative; overflow: hidden; padding: 38px 44px 28px; border-bottom: 1px solid var(--line-soft);
+  background:
+    radial-gradient(900px 320px at 0% 0%, rgba(63,184,169,0.16), transparent 70%),
+    radial-gradient(700px 300px at 100% 0%, rgba(57,135,229,0.10), transparent 70%);
+}
+.hero-inner { display: grid; grid-template-columns: 1fr auto; gap: 28px; align-items: end; }
+.eyebrow { font-size: 12px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--accent); font-weight: 650; display: flex; align-items: center; gap: 10px; }
+.hero h2 { font-family: var(--font-display); font-size: 36px; line-height: 1.1; font-weight: 700; margin: 6px 0 12px; letter-spacing: -0.4px; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: 8px; }
+.pill {
+  display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px;
+  background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.08);
+  font-size: 12.5px; color: var(--ink-2); max-width: 100%;
+}
+.pill.mono { font-family: var(--mono); font-size: 12px; }
+.pill.link { cursor: pointer; }
+.pill.link:hover { color: var(--ink); border-color: rgba(255,255,255,0.2); }
+.pill span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.badge-live { background: var(--accent); color: var(--accent-ink); border-radius: 999px; padding: 2px 9px; font-size: 11px; font-weight: 700; letter-spacing: 0.6px; }
+.hero-stat { text-align: right; padding-bottom: 4px; }
+.hero-stat .num { font-family: var(--font-display); font-size: 60px; font-weight: 700; line-height: 1; letter-spacing: -1.5px; font-variant-numeric: tabular-nums; }
+.hero-stat .lbl { font-size: 14px; color: var(--ink-2); margin-top: 4px; }
+.hero-stat .sub { font-size: 13px; color: var(--accent); margin-top: 2px; font-weight: 600; }
+.flow { margin-top: 26px; display: grid; grid-template-columns: auto 1fr; gap: 22px; align-items: center; }
+.flow-steps { display: flex; align-items: center; gap: 6px; }
+.fstep { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.fstep b { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); border: 1px solid var(--line); font-size: 12px; color: var(--ink-2); }
+.fstep.done b { background: rgba(63,184,169,0.16); border-color: rgba(63,184,169,0.5); color: #8fe0d4; }
+.fstep.now { color: var(--ink); font-weight: 600; }
+.fstep.now b { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); box-shadow: 0 0 0 4px var(--accent-soft); }
+.fline { width: 26px; height: 2px; background: var(--line); border-radius: 2px; }
+.fline.done { background: rgba(63,184,169,0.5); }
+.flow-act { display: flex; align-items: center; gap: 16px; justify-content: flex-end; }
+.flow-act .hint { color: var(--ink-2); font-size: 13px; max-width: 540px; text-align: right; text-wrap: pretty; }
+.flow-act .btn.big { height: 44px; padding: 0 22px; font-size: 14.5px; border-radius: 12px; }
+.title-row { display: flex; align-items: center; gap: 10px; }
+.icon-btn { background: transparent; border: 1px solid transparent; border-radius: 9px; width: 34px; height: 34px; display: grid; place-items: center; color: var(--muted); cursor: pointer; margin-top: 4px; }
+.icon-btn:hover { color: var(--ink); background: rgba(255,255,255,0.06); border-color: var(--line); }
+.icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.reverify { margin-top: 34px; text-align: center; }
+.linkish { background: none; border: 0; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; font-size: 13px; }
+.linkish:hover { color: var(--ink); }
+.linkish:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.compo { margin-top: 24px; }
+.bar { display: flex; gap: 2px; height: 12px; }
+.seg { height: 100%; min-width: 6px; border-radius: 2px; transform-origin: left; animation: grow 0.7s cubic-bezier(.2,.8,.2,1) both; cursor: pointer; }
+.seg:first-child { border-radius: 4px 2px 2px 4px; }
+.seg:last-child { border-radius: 2px 4px 4px 2px; }
+.seg:only-child { border-radius: 4px; }
+.seg:hover { filter: brightness(1.18); }
+@keyframes grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 12px; }
+.legend button { background: none; border: 0; padding: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-2); }
+.legend button:hover { color: var(--ink); }
+.legend .sw { width: 10px; height: 10px; border-radius: 3px; }
+.legend b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.content { padding: 22px 44px 120px; }
+.alert { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 12px; margin-bottom: 14px; background: rgba(208, 59, 59, 0.1); border: 1px solid rgba(208, 59, 59, 0.45); }
+.alert.warn { background: rgba(250, 178, 25, 0.08); border-color: rgba(250, 178, 25, 0.4); }
+.alert.info { background: rgba(57, 135, 229, 0.08); border-color: rgba(57, 135, 229, 0.4); }
+.alert svg { flex-shrink: 0; margin-top: 2px; }
+.alert strong { display: block; margin-bottom: 2px; }
+.alert span { color: var(--ink-2); }
+
+.toolbar {
+  position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 12px 44px; background: rgba(17,19,21,0.84); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line-soft);
+}
+.chips { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.chip {
+  border: 1px solid var(--line); background: var(--surface); padding: 6px 12px; border-radius: 999px; cursor: pointer;
+  font-size: 13px; color: var(--ink-2); display: inline-flex; align-items: center; gap: 7px; transition: all 0.15s;
+}
+.chip:hover { border-color: #3c434a; color: var(--ink); }
+.chip.on { background: var(--ink); color: #111; border-color: var(--ink); }
+.chip .dot { width: 8px; height: 8px; border-radius: 50%; }
+.chip .n { font-variant-numeric: tabular-nums; opacity: 0.75; }
+.search { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 0 12px; height: 36px; width: 260px; }
+.search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.search input { background: none; border: 0; outline: 0; width: 100%; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 8px; border-radius: 10px; padding: 0 14px; height: 36px;
+  border: 1px solid var(--line); background: var(--surface); cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.15s; white-space: nowrap;
+}
+.btn:hover { background: var(--surface-2); border-color: #3c434a; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.primary:hover { background: var(--accent-hover); }
+.btn.primary:disabled { background: var(--surface-3); color: var(--muted); border-color: var(--surface-3); opacity: 1; }
+.btn.ghost { background: transparent; border-color: transparent; color: var(--ink-2); }
+.btn.ghost:hover { color: var(--ink); background: var(--surface); }
+.btn.small { height: 28px; padding: 0 10px; font-size: 12px; border-radius: 8px; }
+.btn.danger { color: #ff9b9b; }
+.btn .badge { background: rgba(0,0,0,0.2); border-radius: 999px; padding: 0 7px; font-size: 11px; line-height: 18px; }
+
+.group { margin-top: 28px; }
+.group-head { margin-bottom: 12px; }
+.group-title { display: flex; align-items: center; gap: 10px; }
+.group-title .sw { width: 12px; height: 12px; border-radius: 4px; }
+.group-title h3 { font-family: var(--font-display); font-size: 19px; margin: 0; font-weight: 650; }
+.group-title .count { color: var(--muted); font-size: 15px; font-variant-numeric: tabular-nums; }
+.group-desc { color: var(--ink-2); font-size: 13px; margin: 4px 0 0 22px; max-width: 800px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+.card {
+  position: relative; display: grid; grid-template-columns: 52px 1fr; gap: 14px; padding: 13px; border-radius: var(--radius);
+  background: var(--surface); border: 1px solid var(--line-soft); animation: rise 0.35s ease both;
+}
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.card .stripe { position: absolute; left: 0; top: 14px; bottom: 14px; width: 3px; border-radius: 0 3px 3px 0; }
+.ico {
+  width: 52px; height: 52px; border-radius: 12px; overflow: hidden; background: var(--surface-3); display: grid; place-items: center;
+  font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--ink-2); box-shadow: 0 0 0 1px rgba(255,255,255,0.05);
+}
+.ico img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card-body { min-width: 0; }
+.card-title { font-weight: 600; font-size: 14.5px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.card-name { font-family: var(--mono); font-size: 11.5px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.tag { font-size: 11.5px; padding: 2px 8px; border-radius: 6px; background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line-soft); }
+.tag.good { color: #8fe0d4; border-color: rgba(63,184,169,0.4); background: rgba(63,184,169,0.08); }
+.tag.warn { color: #ffd27a; border-color: rgba(250,178,25,0.4); background: rgba(250,178,25,0.08); }
+.note { font-size: 12.5px; color: var(--ink-2); margin-top: 7px; }
+.compact .card { grid-template-columns: 40px 1fr; padding: 10px 12px; gap: 12px; }
+.compact .ico { width: 40px; height: 40px; border-radius: 10px; font-size: 14px; }
+
+.empty { text-align: center; padding: 90px 30px; color: var(--muted); max-width: 640px; margin: 0 auto; }
+.empty h3 { color: var(--ink); font-family: var(--font-display); font-size: 24px; margin: 18px 0 8px; }
+.empty p { margin: 0 0 22px; }
+.empty .big { width: 76px; height: 76px; border-radius: 22px; margin: 0 auto; background: var(--accent-soft); display: grid; place-items: center; color: var(--accent); }
+.steps { text-align: left; display: grid; gap: 10px; margin: 0 auto 26px; max-width: 460px; }
+.steps div { display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: start; color: var(--ink-2); }
+.steps b { width: 24px; height: 24px; border-radius: 50%; background: var(--surface-2); display: grid; place-items: center; font-size: 12px; color: var(--ink); }
+
+.overlay { position: fixed; inset: 0; z-index: 40; background: rgba(5,6,7,0.62); backdrop-filter: blur(4px); display: none; }
+.overlay.show { display: block; animation: fade 0.2s; }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+.modal {
+  position: fixed; z-index: 41; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(620px, 92vw); max-height: 90vh;
+  background: #1a1d20; border: 1px solid #343a40; border-radius: 18px; box-shadow: 0 30px 90px rgba(0,0,0,0.6);
+  display: none; flex-direction: column;
+}
+.modal.show { display: flex; animation: fade 0.18s; }
+.modal-head { padding: 22px 24px 6px; }
+.modal-head h3 { margin: 0; font-family: var(--font-display); font-size: 21px; }
+.modal-head p { margin: 6px 0 0; color: var(--ink-2); font-size: 13px; word-break: break-word; }
+.modal-body { padding: 14px 24px; overflow-y: auto; }
+.modal-foot { padding: 14px 24px 20px; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--line-soft); }
+.field { margin-bottom: 16px; }
+.field label { display: block; font-size: 12.5px; font-weight: 600; color: var(--ink-2); margin-bottom: 6px; }
+.field .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+.field .hint.warn { color: #ffd27a; }
+.input-row { display: flex; gap: 8px; }
+.input { flex: 1; height: 38px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); padding: 0 12px; outline: 0; min-width: 0; width: 100%; }
+.input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.input.mono { font-family: var(--mono); font-size: 12.5px; }
+.sumlist { display: grid; gap: 8px; }
+.sumrow { display: grid; grid-template-columns: 12px 1fr auto; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line-soft); }
+.sumrow .sw { width: 10px; height: 10px; border-radius: 3px; }
+.sumrow small { display: block; color: var(--muted); font-size: 12px; }
+.sumrow b { font-variant-numeric: tabular-nums; }
+.check-line { display: flex; gap: 10px; align-items: flex-start; margin-top: 14px; color: var(--ink-2); font-size: 13px; cursor: pointer; }
+.check-line input { margin-top: 3px; accent-color: var(--accent); }
+
+.progress { height: 10px; border-radius: 999px; background: var(--surface-3); overflow: hidden; margin-top: 6px; }
+.progress div { height: 100%; width: 0; background: linear-gradient(90deg, #2a978a, var(--accent)); border-radius: 999px; transition: width 0.3s; }
+.progress.indet div { width: 30%; animation: indet 1.2s infinite ease-in-out; }
+@keyframes indet { 0% { transform: translateX(-100%); } 100% { transform: translateX(340%); } }
+.progress-meta { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; font-size: 12.5px; color: var(--ink-2); font-variant-numeric: tabular-nums; min-height: 19px; }
+.progress-cur { font-size: 13px; color: var(--muted); margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 19px; }
+.phases { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 16px; }
+.phase { font-size: 11.5px; padding: 3px 9px; border-radius: 999px; background: var(--surface-2); color: var(--muted); border: 1px solid var(--line-soft); }
+.phase.on { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
+.phase.done { color: #8fe0d4; border-color: rgba(63,184,169,0.4); }
+
+.toast {
+  position: fixed; z-index: 60; left: 50%; bottom: 26px; transform: translate(-50%, 160%); max-width: min(720px, 92vw);
+  background: #0b0c0d; border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; box-shadow: 0 16px 50px rgba(0,0,0,0.55);
+  transition: transform 0.3s cubic-bezier(.2,.8,.2,1);
+}
+.toast.show { transform: translate(-50%, 0); }
+.toast.err { border-color: rgba(208,59,59,0.6); }
+.toast.ok { border-color: rgba(63,184,169,0.6); }
+.lost { position: fixed; inset: 0; z-index: 70; background: rgba(5,6,7,0.8); display: none; place-items: center; color: var(--ink-2); font-size: 15px; }
+.lost.show { display: grid; }
+.rv-search { margin-bottom: 10px; width: 100%; }
+.rv-list { display: grid; gap: 4px; max-height: 46vh; overflow-y: auto; padding-right: 4px; }
+.rv-item { display: grid; grid-template-columns: 22px 1fr auto; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 9px; background: var(--surface); border: 1px solid var(--line-soft); cursor: pointer; }
+.rv-item:hover { border-color: #3c434a; }
+.rv-item.on { border-color: var(--accent); background: rgba(63,184,169,0.08); }
+.rv-item input { accent-color: var(--accent); width: 16px; height: 16px; }
+.rv-item .t { font-weight: 600; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rv-item .f { font-family: var(--mono); font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rv-item .v { font-size: 12px; color: var(--ink-2); }
+.tooltip { position: fixed; pointer-events: none; z-index: 50; background: #0b0c0d; border: 1px solid var(--line); padding: 7px 10px; border-radius: 9px; font-size: 12.5px; opacity: 0; transition: opacity 0.12s; }
+.tooltip.show { opacity: 1; }
+</style>
+</head>
+<body>
+<aside class="rail">
+  <div class="brand">
+    <div class="brand-mark"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#04201d" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="6" rx="1.5"/><rect x="4" y="11" width="16" height="6" rx="1.5"/><path d="M12 17v4m-3-2 3 3 3-3"/></svg></div>
+    <div><h1>FS25 Server Sync</h1><p data-i18n="tagline"></p></div>
+  </div>
+  <div class="rail-label" data-i18n="servers"></div>
+  <div class="srv-list" id="srvList"></div>
+  <button class="btn add-srv" id="addSrv"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span data-i18n="addServer"></span></button>
+  <div class="rail-foot">
+    <div class="foot-box">
+      <div class="k" data-i18n="library"></div>
+      <div class="v" id="libPath"></div>
+      <div class="acts"><button class="btn small" id="libChange" data-i18n="change"></button><button class="btn small ghost" id="libOpen" data-i18n="open"></button></div>
+    </div>
+    <div class="foot-box">
+      <div class="k" data-i18n="gameLoads"></div>
+      <div class="v" id="activePath"></div>
+      <div class="acts" id="activeActs"></div>
+    </div>
+  </div>
+</aside>
+
+<main class="main" id="main"></main>
+
+<div class="overlay" id="overlay"></div>
+
+<div class="modal" id="srvModal" role="dialog" aria-modal="true">
+  <div class="modal-head"><h3 id="srvModalTitle"></h3><p data-i18n="srvModalSub"></p></div>
+  <div class="modal-body">
+    <div class="field"><label for="fName" data-i18n="fName"></label><input class="input" id="fName" autocomplete="off"></div>
+    <div class="field"><label for="fUrl" data-i18n="fUrl"></label><input class="input mono" id="fUrl" placeholder="http://123.45.67.89:8080/mods.html" autocomplete="off"><div class="hint" data-i18n="fUrlHint"></div></div>
+    <div class="field"><label data-i18n="fLogin"></label>
+      <div class="input-row"><input class="input" id="fUser" autocomplete="off"><input class="input" id="fPass" type="password" autocomplete="new-password"></div>
+      <div class="hint" data-i18n="fLoginHint"></div>
+    </div>
+    <div class="field"><label for="fTarget" data-i18n="fTarget"></label>
+      <div class="input-row"><input class="input mono" id="fTarget" autocomplete="off"><button class="btn" id="fTargetPick" data-i18n="browse"></button></div>
+      <div class="hint" id="fTargetHint"></div>
+    </div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn ghost danger" id="srvDelete" style="margin-right:auto" data-i18n="delete"></button>
+    <button class="btn ghost" data-close data-i18n="cancel"></button>
+    <button class="btn primary" id="srvSave" data-i18n="save"></button>
+  </div>
+</div>
+
+<div class="modal" id="libModal" role="dialog" aria-modal="true">
+  <div class="modal-head"><h3 data-i18n="libTitle"></h3><p data-i18n="libSub"></p></div>
+  <div class="modal-body">
+    <div class="field"><label for="fLib" data-i18n="library"></label>
+      <div class="input-row"><input class="input mono" id="fLib" autocomplete="off"><button class="btn" id="fLibPick" data-i18n="browse"></button></div>
+      <div class="hint" data-i18n="libHint"></div>
+    </div>
+  </div>
+  <div class="modal-foot"><button class="btn ghost" data-close data-i18n="cancel"></button><button class="btn primary" id="libSave" data-i18n="save"></button></div>
+</div>
+
+<div class="modal" id="applyModal" role="dialog" aria-modal="true">
+  <div class="modal-head"><h3 data-i18n="applyTitle"></h3><p id="applySub"></p></div>
+  <div class="modal-body" id="applyBody"></div>
+  <div class="modal-foot"><button class="btn ghost" data-close data-i18n="cancel"></button><button class="btn primary" id="applyGo" data-i18n="applyGo"></button></div>
+</div>
+
+<div class="modal" id="rvModal" role="dialog" aria-modal="true">
+  <div class="modal-head"><h3 data-i18n="rvTitle"></h3><p data-i18n="rvSub"></p></div>
+  <div class="modal-body"><input class="input rv-search" id="rvQ"><div class="rv-list" id="rvList"></div></div>
+  <div class="modal-foot">
+    <button class="btn ghost" id="rvAll" style="margin-right:auto" data-i18n="rvAll"></button>
+    <button class="btn ghost" data-close data-i18n="cancel"></button>
+    <button class="btn primary" id="rvGo" data-i18n="rvSelected"></button>
+  </div>
+</div>
+
+<div class="modal" id="jobModal" role="dialog" aria-modal="true">
+  <div class="modal-head"><h3 id="jobTitle"></h3><p id="jobPhase"></p></div>
+  <div class="modal-body">
+    <div class="progress" id="jobBar"><div></div></div>
+    <div class="progress-meta"><span id="jobCount"></span><span id="jobBytes"></span></div>
+    <div class="progress-cur" id="jobCur"></div>
+    <div class="phases" id="jobPhases"></div>
+  </div>
+  <div class="modal-foot"><button class="btn" id="jobCancel" data-i18n="stop"></button></div>
+</div>
+
+<div class="toast" id="toast"><span id="toastText"></span></div>
+<div class="tooltip" id="tip"></div>
+<div class="lost" id="lost"><div data-i18n="lost"></div></div>
+
+<script>
+const token = new URLSearchParams(location.search).get("t") || "";
+const I18N = {
+  de: {
+    tagline: "Mods exakt wie auf dem Server", servers: "Server", addServer: "Server hinzufügen", library: "Mod-Bibliothek", change: "Ändern", open: "Öffnen",
+    gameLoads: "Spiel lädt Mods aus", defaultFolder: "Standard-Mods-Ordner", restorePrev: "Vorherigen Ordner wieder aktivieren", notSet: "nicht festgelegt",
+    srvNew: "Server hinzufügen", srvEdit: "Server bearbeiten", srvModalSub: "Die Mods-Seite muss der Server-Admin im Webinterface freigegeben haben.",
+    fName: "Name", fUrl: "Adresse der Mods-Seite", fUrlHint: "Die komplette Adresse aus dem Browser einfügen. IP und Port reichen auch.", fTarget: "Zielordner für die Server-Mods",
+    browse: "Durchsuchen", delete: "Entfernen", cancel: "Abbrechen", save: "Speichern",
+    hintSameVol: "Liegt auf demselben Laufwerk wie die Bibliothek: Mods werden per Hardlink eingebunden und belegen keinen zusätzlichen Platz.",
+    hintOtherVol: "Anderes Laufwerk als die Bibliothek: Hardlinks gehen nur innerhalb eines Laufwerks, die Mods werden deshalb kopiert und belegen zusätzlich Platz.",
+    libTitle: "Mod-Bibliothek", libSub: "Der Ordner, in dem deine Mod-Dateien liegen. Neue Downloads landen im Unterordner _ServerDownloads.",
+    libHint: "Durchsucht werden der Ordner selbst und seine direkten Unterordner.",
+    noLibTitle: "Wo liegen deine Mods?", noLibText: "Wähle zuerst den Ordner, in dem deine Mod-Dateien liegen. Das Tool sucht dort nach Mods, die der Server verwendet.", pickLibrary: "Bibliothek wählen",
+    noSrvTitle: "Noch kein Server eingetragen", noSrvText: "So funktioniert es:",
+    step1: "Adresse der Mods-Seite des Servers eintragen.", step2: "Prüfen: Das Tool vergleicht jede Server-Mod mit deiner Bibliothek, auf das Byte genau.",
+    step3: "Abgleichen: Fehlendes wird vom Server geladen, alles landet in einem eigenen Ordner.", step4: "Ordner aktivieren und dem Server beitreten.",
+    serverEyebrow: "Server", active: "Aktiv", check: "Prüfen", verify: "Gründlich prüfen", apply: "Abgleichen", activate: "Ordner aktivieren", edit: "Bearbeiten",
+    verifyTip: "Vergisst alle gespeicherten Server-Hashes. Beim nächsten Abgleich wird jede Mod erneut vom Server geladen und per Spiel-Hash verglichen. Dauert je nach Mod-Menge lange.",
+    modsOnServer: "Mods auf dem Server", allGood: "Alles passt", toDo: "{n} Änderungen offen", toDo1: "1 Änderung offen",
+    notChecked: "Noch nicht geprüft", notCheckedText: "Prüfen liest die Mod-Liste des Servers und vergleicht sie mit deiner Bibliothek. Dabei wird noch nichts heruntergeladen oder verändert.",
+    lastCheck: "Geprüft {t}", thoroughDone: "gründlich",
+    gDownload: "Fehlt, wird heruntergeladen", gDownloadDesc: "Diese Mods gibt es in deiner Bibliothek nicht. Sie werden geladen, in der Bibliothek unter _ServerDownloads abgelegt und in den Zielordner verlinkt.",
+    gUpdate: "Andere Version vorhanden", gUpdateDesc: "Du hast diese Mods, aber nicht exakt die Datei vom Server. Zwei Versionen dürfen nicht im selben Ordner liegen, deshalb kommt die Server-Datei als echte Zip direkt in den Zielordner, ohne Verlinkung. Deine Datei bleibt unangetastet.",
+    gLink: "Vorhanden, wird verlinkt", gLinkDesc: "Eine Datei mit demselben Spiel-Hash wie auf dem Server liegt schon in deiner Bibliothek. Sie wird nur in den Zielordner eingebunden.",
+    gRemove: "Wird aus dem Zielordner genommen", gRemoveDesc: "Liegt im Zielordner, der Server nutzt es aber nicht, weil es dort fehlt oder ausgeschaltet ist. Wird aus dem Zielordner genommen, nie gelöscht.",
+    gNodl: "Kein Download möglich", gNodlDesc: "Der Server bietet für diese Mods keinen Download an. Besorge sie selbst und lege sie in die Bibliothek.",
+    gError: "Fehler beim Prüfen", gErrorDesc: "Für diese Mods konnte die Dateigröße nicht abgefragt werden. Einfach erneut prüfen.",
+    gOk: "Passt bereits", gOkDesc: "Liegen im Zielordner, der Spiel-Hash ist identisch mit dem Server.",
+    all: "Alle", search: "Mod suchen",
+    tVerified: "Spiel-Hash bestätigt", tModHub: "ModHub", tNoModHub: "nicht im ModHub", tLocal: "lokal {v}", tFrom: "aus {f}", tStore: "Server-Downloads",
+    tUnlink: "nur Verknüpfung, wird entfernt", tArchive: "echte Datei, wird nach _ServerDownloads\\_Archiv verschoben", tFolder: "Ordner", tInTarget: "liegt im Zielordner",
+    alertOtherVol: "Bibliothek und Zielordner liegen auf verschiedenen Laufwerken", alertOtherVolText: "Hardlinks funktionieren nur innerhalb eines Laufwerks. Die Mods werden deshalb in den Zielordner kopiert und belegen zusätzlichen Platz.",
+    alertForeign: "Der Zielordner enthält bereits Dateien", alertForeignText: "Dieser Ordner wurde noch nie mit dem Tool abgeglichen. Alles, was der Server nicht verwendet, wird beim Abgleichen herausgenommen.",
+    alertGame: "Das Spiel läuft gerade", alertGameText: "Der Ordner ist im Spiel aktiv. Abgleichen und Aktivieren geht erst, wenn das Spiel beendet ist.",
+    alertNodl: "{n} Mods kann der Server nicht liefern", alertNodl1: "1 Mod kann der Server nicht liefern", alertNodlText: "Ohne diese Mods kannst du dem Server nicht beitreten. Lege sie in die Bibliothek und prüfe erneut.",
+    alertInactive: "{n} weitere Mods liegen auf dem Server, sind dort aber nicht aktiv und werden nicht übernommen.",
+    applyTitle: "Abgleichen", applySub: "Zielordner: {p}", applyGo: "Jetzt abgleichen",
+    sDownload: "Herunterladen", sUpdate: "Server-Version direkt in den Zielordner laden", sLink: "Aus der Bibliothek verlinken", sRemove: "Aus dem Zielordner nehmen", sCopy: "Werden kopiert (anderes Laufwerk)",
+    sRemoveSub: "{a} Verknüpfungen entfernen, {b} echte Dateien nach _ServerDownloads\\_Archiv verschieben", nothingToDo: "Nichts zu tun, alles passt bereits.",
+    confirmForeign: "Ich habe verstanden, dass Dateien aus dem Zielordner herausgenommen werden.",
+    jCheck: "Server wird geprüft", jVerify: "Gründliche Prüfung", jApply: "Abgleich läuft",
+    pStart: "Startet", pFetch: "Mod-Liste lesen", pProbe: "Dateigrößen abfragen", pScan: "Bibliothek durchsuchen", pVerify: "Herunterladen und prüfen", pCompare: "Vergleichen",
+    pRemove: "Aufräumen", pDownload: "Vom Server laden und vergleichen", pLink: "Verlinken", pRecheck: "Kontrolle",
+    stop: "Abbrechen", stopping: "Wird abgebrochen", ofN: "{a} von {b}",
+    doneCheck: "Prüfung abgeschlossen", doneApply: "Abgleich abgeschlossen, der Ordner entspricht jetzt dem Server.", activated: "Ordner aktiviert. Beim nächsten Spielstart lädt das Spiel diese Mods.", restored: "Vorheriger Ordner ist wieder aktiv.",
+    deleteConfirm: "Server \"{n}\" aus der Liste entfernen? Der Zielordner bleibt erhalten.",
+    lost: "Verbindung zum Programm verloren.",
+    e_urlEmpty: "Bitte die Adresse der Mods-Seite eintragen.", e_urlInvalid: "Diese Adresse ist ungültig: {a}", e_serverUnreachable: "Server nicht erreichbar: {a}",
+    e_noServerPage: "Unter dieser Adresse läuft kein FS25 Dedicated Server.", e_modsPageLocked: "Die Mods-Seite ist nur mit Login erreichbar. Trage beim Server Benutzername und Passwort des Webinterfaces ein.",
+    e_noModsFound: "Auf der Mods-Seite wurden keine Mods gefunden.", e_probeFailed: "Dateigröße konnte nicht abgefragt werden: {a}", e_sizeChanged: "Die Datei auf dem Server hat sich seit der Prüfung geändert: {a}. Bitte erneut prüfen.",
+    e_downloadIncomplete: "Download unvollständig: {a}", e_downloadFailed: "Download fehlgeschlagen: {a}", e_cancelled: "Abgebrochen.",
+    e_noLibrary: "Bitte zuerst die Mod-Bibliothek wählen.", e_noTarget: "Bitte einen Zielordner wählen.", e_targetIsDrive: "Ein ganzes Laufwerk geht nicht als Zielordner.",
+    e_targetIsLibrary: "Der Zielordner darf nicht die Bibliothek selbst sein oder sie enthalten.", e_targetInStore: "Der Zielordner darf nicht im Ordner _ServerDownloads liegen.",
+    e_targetIsCategory: "Dieser Ordner ist ein Teil deiner Bibliothek und enthält Mods. Bitte einen neuen, eigenen Ordner wählen.",
+    e_libraryMissing: "Bibliotheksordner nicht gefunden: {a}", e_libraryIsTarget: "Dieser Ordner ist schon Zielordner von \"{a}\".", e_planOutdated: "Die Ordner haben sich seit der Prüfung geändert. Bitte erneut prüfen.",
+    e_gameRunningActive: "Das Spiel läuft und nutzt diesen Ordner gerade. Bitte erst das Spiel beenden.", e_gameRunning: "Das Spiel läuft noch. Bitte erst beenden, sonst überschreibt es die Einstellung.",
+    e_noGameSettings: "gameSettings.xml nicht gefunden: {a}", e_serverUnknown: "Server nicht gefunden.", e_busy: "Es läuft gerade schon ein Vorgang.", e_nameEmpty: "Bitte einen Namen eintragen.",
+    e_targetUsed: "Dieser Zielordner gehört schon zu \"{a}\".", e_noPlan: "Bitte zuerst prüfen.", e_notSynced: "Bitte zuerst abgleichen.", e_folderMissing: "Ordner nicht gefunden.",
+    e_unexpected: "Unerwarteter Fehler: {a}", errorN: "Fehler {n}",
+    dlcPill: "DLCs: {a} von {b} vorhanden", dlcPillUnknown: "Server nutzt {b} DLCs", alertDlcMissing: "Dir fehlen DLCs, die der Server nutzt: {x}", alertDlcMissingText: "Ohne sie kannst du dem Server nicht beitreten. DLCs kann das Tool nicht herunterladen, sie müssen gekauft und installiert sein. Danach erneut prüfen.", alertDlcUnknown: "Der Server nutzt diese DLCs: {x}", alertDlcUnknownText: "Deine Spielinstallation wurde nicht gefunden, deshalb kann das Tool nicht prüfen, ob du sie hast. Ohne sie ist kein Beitritt möglich.", h1Dlc: "Installiere zuerst die fehlenden DLCs, danach erneut prüfen.",
+    gInactive: "Auf dem Server inaktiv", gInactiveDesc: "Nur für Admins sichtbar. Diese Mods liegen auf dem Server, sind dort aber ausgeschaltet und belegen zusammen {size}. Wenn sie nicht mehr gebraucht werden, kannst du sie im Webinterface löschen. Das Tool ändert am Server nichts und lädt sie nicht herunter.", adminPill: "Admin-Rechte",
+    runPill: "Läuft: {m}", runPillSlot: "Läuft: {m} ({s})", gSkip: "Andere Karten, laufen nicht", gSkipDesc: "Diese Karten sind auf dem Server eingeschaltet, laufen aber gerade nicht. Sie werden nicht übernommen. Liegen sie schon im Zielordner, werden sie herausgenommen.", alertRunUnknown: "Laufende Karte {m} keiner Karten-Mod eindeutig zugeordnet", alertRunUnknownText: "Vermutlich eine Karte aus dem Grundspiel. Zur Sicherheit werden alle eingeschalteten Karten-Mods übernommen.",
+    fLogin: "Login für das Webinterface (optional)", fUser: "Benutzername", fPass: "Passwort", fLoginHint: "Nur nötig, wenn die Mods-Seite ohne Anmeldung nicht erreichbar ist. Das Passwort wird verschlüsselt für dein Windows-Konto gespeichert.", fPassKeep: "gespeichert, leer lassen zum Beibehalten", mapsPill: "Karten: {m}", alertServerMaps: "Auf dem Server sind mehrere Karten aktiv: {m}", alertServerMapsText: "Alle landen im Zielordner. Welche davon gerade läuft, zeigt die Mods-Seite nicht.", alertOtherMap: "Der Zielordner enthält eine Karte, die der Server nicht nutzt: {x}", alertOtherMapText: "Sie wird beim Abgleichen aus dem Zielordner genommen und nach _ServerDownloads\\_Archiv verschoben.", e_loginFailed: "Anmeldung am Webinterface fehlgeschlagen. Bitte Benutzername und Passwort prüfen.",
+    h2First: "Der erste Abgleich mit diesem Server lädt jede Mod einmal vom Server ({size}). Je nach Internetgeschwindigkeit dauert das eine Weile, danach geht es schnell.", firstNote: "Erster Abgleich mit diesem Server: Jede Mod wird einmal vom Server geladen und mit deiner Datei verglichen, insgesamt {size}. Je nach Internetgeschwindigkeit dauert das eine Weile, bei 50 Mbit/s etwa {a}, bei 16 Mbit/s etwa {b}. Spätere Abgleiche laden nur noch, was sich auf dem Server ändert.", eta: "noch ca. {t}", durMin: "{n} Min.", durLess: "unter 1 Min.", durHour: "{h} Std. {m} Min.",
+    doneStats: "Abgleich fertig. {c} Mods mit dem Server verglichen: {i} identisch (nichts gespeichert), {s} gespeichert ({b}).", doneStatsNone: "Abgleich fertig, der Ordner entspricht jetzt dem Server. Es musste nichts geladen werden.",
+    rvTitle: "Mods neu vom Server prüfen", rvSub: "Hake die Mods an, die im Spiel in den Server-Details ein rotes Warndreieck haben. Nur diese werden beim nächsten Abgleich neu vom Server geladen und verglichen.", rvSelected: "Ausgewählte neu prüfen", rvSelectedN: "{n} ausgewählte neu prüfen", rvAll: "Alle neu prüfen", rvSearch: "Mod suchen", rvAllConfirm: "Wirklich alle Mods neu vom Server laden? Das dauert je nach Mod-Menge lange.",
+    step1: "Prüfen", step2: "Abgleichen", step3: "Aktivieren", step4: "Beitreten", doCheck: "Server prüfen", doRecheck: "Erneut prüfen", doApply: "Jetzt abgleichen", doActivate: "Ordner aktivieren", doLaunch: "Spiel starten", h1: "Liest die Mod-Liste des Servers und vergleicht sie mit deiner Bibliothek. Dabei wird noch nichts verändert.", h1Blocked: "Behebe zuerst das Problem oben, danach erneut prüfen.", h2: "Lädt fehlende und abweichende Mods und baut den Ordner so auf, dass er exakt dem Server entspricht.", h3: "Stellt das Spiel auf diesen Ordner um, damit es genau die Server-Mods lädt.", h3Game: "Bitte zuerst das Spiel beenden, sonst überschreibt es die Einstellung.", h4: "Alles bereit. Starte das Spiel und tritt dem Server bei.", h4Game: "Das Spiel läuft bereits. Falls es vor dem Aktivieren gestartet wurde, einmal neu starten.", reverify: "Probleme beim Beitreten? Alle Mods neu vom Server prüfen", editServer: "Server bearbeiten", e_launchFailed: "Das Spiel konnte nicht gestartet werden: {a}",
+    gCheck: "Vorhanden, wird mit dem Server verglichen", gCheckDesc: "Gleiche Version und Größe wie auf dem Server. Ob die Datei exakt gleich ist, zeigt erst der Spiel-Hash. Dafür wird die Server-Datei beim Abgleichen einmal geladen: Ist sie identisch, bleibt deine Datei verlinkt, sonst kommt die Server-Datei in den Zielordner.", sCheck: "Vom Server laden und vergleichen", 
+    mapPill: "Karte: {m}", mapNone: "Keine Mod-Karte (Grundspiel-Karte)", tMap: "Karte", alertNoMapFolder: "Für die Server-Karte {m} gibt es keinen Kartenordner", alertNoMapFolderText: "In {r} liegt kein Ordner mit dieser Karte. Der Zielordner wird eigenständig angelegt und enthält dann genau diese eine Karte.", alertMapFolder: "Kartenordner für {m} vorhanden: {f}", alertMapFolderText: "Der Zielordner bleibt trotzdem getrennt, damit er exakt dem Server entspricht.", alertTwoMaps: "Zwei Karten im Zielordner", alertTwoMapsText: "Der Zielordner enthält bereits {x}, der Server nutzt {m}. Ein Mods-Ordner darf nur eine Karte enthalten. Bitte einen anderen Zielordner wählen.", alertMapSwitch: "Der Server hat die Karte gewechselt", alertMapSwitchText: "{x} liegt noch im Zielordner und wird beim Abgleichen herausgenommen.", alertServerTwoMaps: "Auf dem Server sind mehrere Karten aktiv", alertServerTwoMapsText: "Ein Mods-Ordner darf nur eine Karte enthalten. Abgleichen ist gesperrt.", e_twoMaps: "Zwei Karten: Der Zielordner enthält bereits {a}. Bitte einen anderen Zielordner wählen.", e_serverTwoMaps: "Auf dem Server sind mehrere Karten aktiv, ein Mods-Ordner darf nur eine enthalten."
+  },
+  en: {
+    tagline: "Mods exactly as on the server", servers: "Servers", addServer: "Add server", library: "Mod library", change: "Change", open: "Open",
+    gameLoads: "Game loads mods from", defaultFolder: "Default mods folder", restorePrev: "Reactivate previous folder", notSet: "not set",
+    srvNew: "Add server", srvEdit: "Edit server", srvModalSub: "The server admin must have enabled the mods page in the web interface.",
+    fName: "Name", fUrl: "Address of the mods page", fUrlHint: "Paste the full address from your browser. IP and port also work.", fTarget: "Target folder for the server mods",
+    browse: "Browse", delete: "Remove", cancel: "Cancel", save: "Save",
+    hintSameVol: "Same drive as the library: mods are added as hardlinks and take up no extra space.",
+    hintOtherVol: "Different drive than the library: hardlinks only work within one drive, so the mods are copied and take up extra space.",
+    libTitle: "Mod library", libSub: "The folder that holds your mod files. New downloads go into the subfolder _ServerDownloads.",
+    libHint: "The folder itself and its direct subfolders are searched.",
+    noLibTitle: "Where are your mods?", noLibText: "First choose the folder that holds your mod files. The tool looks there for the mods the server uses.", pickLibrary: "Choose library",
+    noSrvTitle: "No server added yet", noSrvText: "How it works:",
+    step1: "Enter the address of the server's mods page.", step2: "Check: the tool compares every server mod with your library, byte for byte.",
+    step3: "Sync: anything missing is downloaded from the server, everything goes into its own folder.", step4: "Activate the folder and join the server.",
+    serverEyebrow: "Server", active: "Active", check: "Check", verify: "Thorough check", apply: "Sync", activate: "Activate folder", edit: "Edit",
+    verifyTip: "Forgets all stored server hashes. On the next sync every mod is downloaded from the server again and compared by game hash. Takes long depending on the number of mods.",
+    modsOnServer: "mods on the server", allGood: "Everything matches", toDo: "{n} changes pending", toDo1: "1 change pending",
+    notChecked: "Not checked yet", notCheckedText: "Check reads the server's mod list and compares it with your library. Nothing is downloaded or changed yet.",
+    lastCheck: "Checked {t}", thoroughDone: "thorough",
+    gDownload: "Missing, will be downloaded", gDownloadDesc: "These mods are not in your library. They are downloaded, stored in the library under _ServerDownloads and linked into the target folder.",
+    gUpdate: "Different version present", gUpdateDesc: "You have these mods, but not exactly the server's file. Two versions must not sit in the same folder, so the server file goes into the target folder as a real zip, without a link. Your file stays untouched.",
+    gLink: "Present, will be linked", gLinkDesc: "A file with the same game hash as on the server is already in your library. It is only added to the target folder.",
+    gRemove: "Taken out of the target folder", gRemoveDesc: "In the target folder, but the server does not use it because it is missing or switched off there. Taken out of the target folder, never deleted.",
+    gNodl: "No download available", gNodlDesc: "The server offers no download for these mods. Get them yourself and put them into the library.",
+    gError: "Check failed", gErrorDesc: "The file size could not be queried for these mods. Simply check again.",
+    gOk: "Already matching", gOkDesc: "In the target folder, the game hash is identical to the server.",
+    all: "All", search: "Search mods",
+    tVerified: "game hash confirmed", tModHub: "ModHub", tNoModHub: "not on ModHub", tLocal: "local {v}", tFrom: "from {f}", tStore: "server downloads",
+    tUnlink: "link only, will be removed", tArchive: "real file, moved to _ServerDownloads\\_Archiv", tFolder: "folder", tInTarget: "in target folder",
+    alertOtherVol: "Library and target folder are on different drives", alertOtherVolText: "Hardlinks only work within one drive. The mods are therefore copied into the target folder and take up extra space.",
+    alertForeign: "The target folder already contains files", alertForeignText: "This folder has never been synced with the tool. Everything the server does not use is taken out when syncing.",
+    alertGame: "The game is running", alertGameText: "This folder is active in the game. Syncing and activating only work once the game is closed.",
+    alertNodl: "The server cannot deliver {n} mods", alertNodl1: "The server cannot deliver 1 mod", alertNodlText: "You cannot join the server without them. Put them into the library and check again.",
+    alertInactive: "{n} more mods are on the server but inactive there, they are not taken over.",
+    applyTitle: "Sync", applySub: "Target folder: {p}", applyGo: "Sync now",
+    sDownload: "Download", sUpdate: "Download server version straight into the target folder", sLink: "Link from library", sRemove: "Take out of target folder", sCopy: "Will be copied (different drive)",
+    sRemoveSub: "remove {a} links, move {b} real files to _ServerDownloads\\_Archiv", nothingToDo: "Nothing to do, everything already matches.",
+    confirmForeign: "I understand that files will be taken out of the target folder.",
+    jCheck: "Checking server", jVerify: "Thorough check", jApply: "Syncing",
+    pStart: "Starting", pFetch: "Read mod list", pProbe: "Query file sizes", pScan: "Search library", pVerify: "Download and verify", pCompare: "Compare",
+    pRemove: "Clean up", pDownload: "Load from server and compare", pLink: "Link", pRecheck: "Verify result",
+    stop: "Cancel", stopping: "Cancelling", ofN: "{a} of {b}",
+    doneCheck: "Check finished", doneApply: "Sync finished, the folder now matches the server.", activated: "Folder activated. The game loads these mods on its next start.", restored: "Previous folder is active again.",
+    deleteConfirm: "Remove server \"{n}\" from the list? The target folder is kept.",
+    lost: "Lost connection to the program.",
+    e_urlEmpty: "Please enter the address of the mods page.", e_urlInvalid: "This address is invalid: {a}", e_serverUnreachable: "Server not reachable: {a}",
+    e_noServerPage: "No FS25 dedicated server runs at this address.", e_modsPageLocked: "The mods page needs a login. Enter the web interface user name and password for this server.",
+    e_noModsFound: "No mods were found on the mods page.", e_probeFailed: "File size could not be queried: {a}", e_sizeChanged: "The file on the server changed since the check: {a}. Please check again.",
+    e_downloadIncomplete: "Download incomplete: {a}", e_downloadFailed: "Download failed: {a}", e_cancelled: "Cancelled.",
+    e_noLibrary: "Please choose the mod library first.", e_noTarget: "Please choose a target folder.", e_targetIsDrive: "A whole drive cannot be the target folder.",
+    e_targetIsLibrary: "The target folder must not be the library itself or contain it.", e_targetInStore: "The target folder must not be inside _ServerDownloads.",
+    e_targetIsCategory: "This folder is part of your library and contains mods. Please choose a new, separate folder.",
+    e_libraryMissing: "Library folder not found: {a}", e_libraryIsTarget: "This folder is already the target folder of \"{a}\".", e_planOutdated: "The folders changed since the check. Please check again.",
+    e_gameRunningActive: "The game is running and uses this folder right now. Please close the game first.", e_gameRunning: "The game is still running. Please close it first, otherwise it overwrites the setting.",
+    e_noGameSettings: "gameSettings.xml not found: {a}", e_serverUnknown: "Server not found.", e_busy: "Another operation is already running.", e_nameEmpty: "Please enter a name.",
+    e_targetUsed: "This target folder already belongs to \"{a}\".", e_noPlan: "Please check first.", e_notSynced: "Please sync first.", e_folderMissing: "Folder not found.",
+    e_unexpected: "Unexpected error: {a}", errorN: "Error {n}",
+    dlcPill: "DLCs: {a} of {b} installed", dlcPillUnknown: "Server uses {b} DLCs", alertDlcMissing: "You are missing DLCs the server uses: {x}", alertDlcMissingText: "You cannot join the server without them. The tool cannot download DLCs, they have to be bought and installed. Check again afterwards.", alertDlcUnknown: "The server uses these DLCs: {x}", alertDlcUnknownText: "Your game installation was not found, so the tool cannot check whether you own them. Joining is not possible without them.", h1Dlc: "Install the missing DLCs first, then check again.",
+    gInactive: "Inactive on the server", gInactiveDesc: "Only visible to admins. These mods are on the server but switched off there, together they take up {size}. If they are no longer needed, you can delete them in the web interface. The tool changes nothing on the server and does not download them.", adminPill: "Admin rights",
+    runPill: "Running: {m}", runPillSlot: "Running: {m} ({s})", gSkip: "Other maps, not running", gSkipDesc: "These maps are enabled on the server but not running right now. They are not taken over. If they are already in the target folder, they are taken out.", alertRunUnknown: "Running map {m} could not be matched to exactly one map mod", alertRunUnknownText: "Probably a base game map. To be safe, all enabled map mods are taken over.",
+    fLogin: "Web interface login (optional)", fUser: "User name", fPass: "Password", fLoginHint: "Only needed if the mods page cannot be opened without logging in. The password is stored encrypted for your Windows account.", fPassKeep: "saved, leave empty to keep", mapsPill: "Maps: {m}", alertServerMaps: "Several maps are active on the server: {m}", alertServerMapsText: "All of them go into the target folder. The mods page does not show which one is currently running.", alertOtherMap: "The target folder contains a map the server does not use: {x}", alertOtherMapText: "It is taken out of the target folder when syncing and moved to _ServerDownloads\\_Archiv.", e_loginFailed: "Login to the web interface failed. Please check user name and password.",
+    h2First: "The first sync with this server downloads every mod once ({size}). Depending on your internet speed this takes a while, afterwards it is quick.", firstNote: "First sync with this server: every mod is downloaded once and compared with your file, {size} in total. Depending on your internet speed this takes a while, about {a} at 50 Mbit/s, about {b} at 16 Mbit/s. Later syncs only download what changes on the server.", eta: "about {t} left", durMin: "{n} min", durLess: "under 1 min", durHour: "{h} h {m} min",
+    doneStats: "Sync finished. {c} mods compared with the server: {i} identical (nothing stored), {s} stored ({b}).", doneStatsNone: "Sync finished, the folder now matches the server. Nothing had to be downloaded.",
+    rvTitle: "Check mods against the server again", rvSub: "Tick the mods that show a red warning triangle in the in-game server details. Only these are downloaded from the server again and compared on the next sync.", rvSelected: "Check selected again", rvSelectedN: "Check {n} selected again", rvAll: "Check all again", rvSearch: "Search mods", rvAllConfirm: "Really download all mods from the server again? This takes long depending on the number of mods.",
+    step1: "Check", step2: "Sync", step3: "Activate", step4: "Join", doCheck: "Check server", doRecheck: "Check again", doApply: "Sync now", doActivate: "Activate folder", doLaunch: "Start game", h1: "Reads the server's mod list and compares it with your library. Nothing is changed yet.", h1Blocked: "Fix the problem above first, then check again.", h2: "Downloads missing and different mods and builds the folder so it matches the server exactly.", h3: "Switches the game to this folder so it loads exactly the server's mods.", h3Game: "Please close the game first, otherwise it overwrites the setting.", h4: "All set. Start the game and join the server.", h4Game: "The game is already running. If it was started before activating, restart it once.", reverify: "Trouble joining? Check all mods against the server again", editServer: "Edit server", e_launchFailed: "The game could not be started: {a}",
+    gCheck: "Present, will be compared with the server", gCheckDesc: "Same version and size as on the server. Only the game hash shows whether the file is exactly the same. The server file is downloaded once when syncing: if it is identical your file stays linked, otherwise the server file goes into the target folder.", sCheck: "Download from server and compare", 
+    mapPill: "Map: {m}", mapNone: "No mod map (base game map)", tMap: "Map", alertNoMapFolder: "There is no map folder for the server map {m}", alertNoMapFolderText: "{r} contains no folder with this map. The target folder is created on its own and then holds exactly this one map.", alertMapFolder: "Map folder for {m} exists: {f}", alertMapFolderText: "The target folder still stays separate so it matches the server exactly.", alertTwoMaps: "Two maps in the target folder", alertTwoMapsText: "The target folder already contains {x}, the server uses {m}. A mods folder must only contain one map. Please choose a different target folder.", alertMapSwitch: "The server switched maps", alertMapSwitchText: "{x} is still in the target folder and is taken out when syncing.", alertServerTwoMaps: "Several maps are active on the server", alertServerTwoMapsText: "A mods folder must only contain one map. Syncing is blocked.", e_twoMaps: "Two maps: the target folder already contains {a}. Please choose a different target folder.", e_serverTwoMaps: "Several maps are active on the server, a mods folder must only contain one."
+  },
+  fr: {
+    tagline: "Les mods exactement comme sur le serveur", servers: "Serveurs", addServer: "Ajouter un serveur", library: "Bibliothèque de mods", change: "Modifier", open: "Ouvrir",
+    gameLoads: "Le jeu charge les mods depuis", defaultFolder: "Dossier de mods par défaut", restorePrev: "Réactiver le dossier précédent", notSet: "non défini",
+    srvNew: "Ajouter un serveur", srvEdit: "Modifier le serveur", srvModalSub: "L'administrateur du serveur doit avoir activé la page des mods dans l'interface web.",
+    fName: "Nom", fUrl: "Adresse de la page des mods", fUrlHint: "Collez l'adresse complète depuis votre navigateur. L'IP et le port suffisent aussi.", fTarget: "Dossier cible pour les mods du serveur",
+    browse: "Parcourir", delete: "Retirer", cancel: "Annuler", save: "Enregistrer",
+    hintSameVol: "Même lecteur que la bibliothèque : les mods sont ajoutés par lien physique et n'occupent pas d'espace supplémentaire.",
+    hintOtherVol: "Autre lecteur que la bibliothèque : les liens physiques ne fonctionnent que sur un même lecteur, les mods sont donc copiés et occupent de l'espace en plus.",
+    libTitle: "Bibliothèque de mods", libSub: "Le dossier qui contient vos fichiers de mods. Les nouveaux téléchargements vont dans le sous-dossier _ServerDownloads.",
+    libHint: "Le dossier lui-même et ses sous-dossiers directs sont parcourus.",
+    noLibTitle: "Où sont vos mods ?", noLibText: "Choisissez d'abord le dossier qui contient vos fichiers de mods. L'outil y cherche les mods utilisés par le serveur.", pickLibrary: "Choisir la bibliothèque",
+    noSrvTitle: "Aucun serveur pour l'instant", noSrvText: "Comment ça marche :",
+    step1: "Saisir l'adresse de la page des mods du serveur.", step2: "Vérifier : l'outil compare chaque mod du serveur avec votre bibliothèque, à l'octet près.",
+    step3: "Synchroniser : ce qui manque est téléchargé depuis le serveur, tout va dans un dossier dédié.", step4: "Activer le dossier et rejoindre le serveur.",
+    serverEyebrow: "Serveur", active: "Actif", check: "Vérifier", verify: "Vérification complète", apply: "Synchroniser", activate: "Activer le dossier", edit: "Modifier",
+    verifyTip: "Oublie tous les hash serveur enregistrés. Lors de la prochaine synchronisation, chaque mod est retéléchargé depuis le serveur et comparé par hash du jeu. Peut être long selon le nombre de mods.",
+    modsOnServer: "mods sur le serveur", allGood: "Tout correspond", toDo: "{n} changements en attente", toDo1: "1 changement en attente",
+    notChecked: "Pas encore vérifié", notCheckedText: "La vérification lit la liste des mods du serveur et la compare avec votre bibliothèque. Rien n'est encore téléchargé ni modifié.",
+    lastCheck: "Vérifié {t}", thoroughDone: "complète",
+    gDownload: "Manquant, sera téléchargé", gDownloadDesc: "Ces mods ne sont pas dans votre bibliothèque. Ils sont téléchargés, rangés dans la bibliothèque sous _ServerDownloads et liés dans le dossier cible.",
+    gUpdate: "Autre version présente", gUpdateDesc: "Vous avez ces mods, mais pas exactement le fichier du serveur. Deux versions ne doivent pas se trouver dans le même dossier, le fichier du serveur va donc directement dans le dossier cible comme vrai zip, sans lien. Votre fichier reste intact.",
+    gLink: "Présent, sera lié", gLinkDesc: "Un fichier avec le même hash du jeu que sur le serveur est déjà dans votre bibliothèque. Il est seulement ajouté au dossier cible.",
+    gRemove: "Retiré du dossier cible", gRemoveDesc: "Dans le dossier cible, mais le serveur ne l'utilise pas car il y manque ou y est désactivé. Retiré du dossier cible, jamais supprimé.",
+    gNodl: "Pas de téléchargement possible", gNodlDesc: "Le serveur ne propose pas ces mods au téléchargement. Procurez-les vous-même et placez-les dans la bibliothèque.",
+    gError: "Erreur de vérification", gErrorDesc: "La taille de fichier n'a pas pu être obtenue pour ces mods. Vérifiez simplement à nouveau.",
+    gOk: "Déjà conforme", gOkDesc: "Dans le dossier cible, le hash du jeu est identique au serveur.",
+    all: "Tous", search: "Chercher un mod",
+    tVerified: "hash du jeu confirmé", tModHub: "ModHub", tNoModHub: "hors ModHub", tLocal: "local {v}", tFrom: "depuis {f}", tStore: "téléchargements serveur",
+    tUnlink: "simple lien, sera retiré", tArchive: "vrai fichier, déplacé vers _ServerDownloads\\_Archiv", tFolder: "dossier", tInTarget: "dans le dossier cible",
+    alertOtherVol: "La bibliothèque et le dossier cible sont sur des lecteurs différents", alertOtherVolText: "Les liens physiques ne fonctionnent que sur un même lecteur. Les mods sont donc copiés dans le dossier cible et occupent de l'espace en plus.",
+    alertForeign: "Le dossier cible contient déjà des fichiers", alertForeignText: "Ce dossier n'a jamais été synchronisé avec l'outil. Tout ce que le serveur n'utilise pas en sera retiré lors de la synchronisation.",
+    alertGame: "Le jeu est lancé", alertGameText: "Ce dossier est actif dans le jeu. La synchronisation et l'activation ne sont possibles qu'une fois le jeu fermé.",
+    alertNodl: "Le serveur ne peut pas fournir {n} mods", alertNodl1: "Le serveur ne peut pas fournir 1 mod", alertNodlText: "Sans eux, impossible de rejoindre le serveur. Placez-les dans la bibliothèque et vérifiez à nouveau.",
+    alertInactive: "{n} autres mods sont sur le serveur mais inactifs, ils ne sont pas repris.",
+    applyTitle: "Synchroniser", applySub: "Dossier cible : {p}", applyGo: "Synchroniser maintenant",
+    sDownload: "Télécharger", sUpdate: "Télécharger la version du serveur directement dans le dossier cible", sLink: "Lier depuis la bibliothèque", sRemove: "Retirer du dossier cible", sCopy: "Seront copiés (autre lecteur)",
+    sRemoveSub: "retirer {a} liens, déplacer {b} vrais fichiers vers _ServerDownloads\\_Archiv", nothingToDo: "Rien à faire, tout correspond déjà.",
+    confirmForeign: "J'ai compris que des fichiers seront retirés du dossier cible.",
+    jCheck: "Vérification du serveur", jVerify: "Vérification complète", jApply: "Synchronisation en cours",
+    pStart: "Démarrage", pFetch: "Lire la liste", pProbe: "Tailles des fichiers", pScan: "Parcourir la bibliothèque", pVerify: "Télécharger et vérifier", pCompare: "Comparer",
+    pRemove: "Nettoyer", pDownload: "Charger depuis le serveur et comparer", pLink: "Lier", pRecheck: "Contrôle",
+    stop: "Annuler", stopping: "Annulation", ofN: "{a} sur {b}",
+    doneCheck: "Vérification terminée", doneApply: "Synchronisation terminée, le dossier correspond maintenant au serveur.", activated: "Dossier activé. Le jeu chargera ces mods au prochain démarrage.", restored: "Le dossier précédent est de nouveau actif.",
+    deleteConfirm: "Retirer le serveur \"{n}\" de la liste ? Le dossier cible est conservé.",
+    lost: "Connexion au programme perdue.",
+    e_urlEmpty: "Veuillez saisir l'adresse de la page des mods.", e_urlInvalid: "Cette adresse n'est pas valide : {a}", e_serverUnreachable: "Serveur injoignable : {a}",
+    e_noServerPage: "Aucun serveur dédié FS25 ne tourne à cette adresse.", e_modsPageLocked: "La page des mods nécessite une connexion. Saisissez le nom d'utilisateur et le mot de passe de l'interface web pour ce serveur.",
+    e_noModsFound: "Aucun mod trouvé sur la page des mods.", e_probeFailed: "Impossible d'obtenir la taille du fichier : {a}", e_sizeChanged: "Le fichier sur le serveur a changé depuis la vérification : {a}. Veuillez vérifier à nouveau.",
+    e_downloadIncomplete: "Téléchargement incomplet : {a}", e_downloadFailed: "Échec du téléchargement : {a}", e_cancelled: "Annulé.",
+    e_noLibrary: "Veuillez d'abord choisir la bibliothèque de mods.", e_noTarget: "Veuillez choisir un dossier cible.", e_targetIsDrive: "Un lecteur entier ne peut pas être le dossier cible.",
+    e_targetIsLibrary: "Le dossier cible ne doit pas être la bibliothèque elle-même ni la contenir.", e_targetInStore: "Le dossier cible ne doit pas se trouver dans _ServerDownloads.",
+    e_targetIsCategory: "Ce dossier fait partie de votre bibliothèque et contient des mods. Veuillez choisir un nouveau dossier dédié.",
+    e_libraryMissing: "Dossier de bibliothèque introuvable : {a}", e_libraryIsTarget: "Ce dossier est déjà le dossier cible de \"{a}\".", e_planOutdated: "Les dossiers ont changé depuis la vérification. Veuillez vérifier à nouveau.",
+    e_gameRunningActive: "Le jeu est lancé et utilise ce dossier. Veuillez d'abord fermer le jeu.", e_gameRunning: "Le jeu est encore lancé. Fermez-le d'abord, sinon il écrase le réglage.",
+    e_noGameSettings: "gameSettings.xml introuvable : {a}", e_serverUnknown: "Serveur introuvable.", e_busy: "Une opération est déjà en cours.", e_nameEmpty: "Veuillez saisir un nom.",
+    e_targetUsed: "Ce dossier cible appartient déjà à \"{a}\".", e_noPlan: "Veuillez d'abord vérifier.", e_notSynced: "Veuillez d'abord synchroniser.", e_folderMissing: "Dossier introuvable.",
+    e_unexpected: "Erreur inattendue : {a}", errorN: "Erreur {n}",
+    dlcPill: "DLC : {a} sur {b} installés", dlcPillUnknown: "Le serveur utilise {b} DLC", alertDlcMissing: "Il vous manque des DLC utilisés par le serveur : {x}", alertDlcMissingText: "Sans eux, impossible de rejoindre le serveur. L'outil ne peut pas télécharger de DLC, ils doivent être achetés et installés. Vérifiez à nouveau ensuite.", alertDlcUnknown: "Le serveur utilise ces DLC : {x}", alertDlcUnknownText: "Votre installation du jeu est introuvable, l'outil ne peut donc pas vérifier si vous les possédez. Impossible de rejoindre sans eux.", h1Dlc: "Installez d'abord les DLC manquants, puis vérifiez à nouveau.",
+    gInactive: "Inactifs sur le serveur", gInactiveDesc: "Visible uniquement pour les admins. Ces mods sont sur le serveur mais désactivés, ils occupent ensemble {size}. S'ils ne sont plus nécessaires, vous pouvez les supprimer dans l'interface web. L'outil ne modifie rien sur le serveur et ne les télécharge pas.", adminPill: "Droits admin",
+    runPill: "En cours : {m}", runPillSlot: "En cours : {m} ({s})", gSkip: "Autres cartes, pas en cours", gSkipDesc: "Ces cartes sont activées sur le serveur mais ne tournent pas actuellement. Elles ne sont pas reprises. Si elles sont déjà dans le dossier cible, elles en sont retirées.", alertRunUnknown: "La carte en cours {m} ne correspond pas à un seul mod de carte", alertRunUnknownText: "Probablement une carte du jeu de base. Par sécurité, tous les mods de carte activés sont repris.",
+    fLogin: "Connexion à l'interface web (facultatif)", fUser: "Nom d'utilisateur", fPass: "Mot de passe", fLoginHint: "Nécessaire uniquement si la page des mods n'est pas accessible sans connexion. Le mot de passe est enregistré chiffré pour votre compte Windows.", fPassKeep: "enregistré, laisser vide pour conserver", mapsPill: "Cartes : {m}", alertServerMaps: "Plusieurs cartes sont actives sur le serveur : {m}", alertServerMapsText: "Toutes vont dans le dossier cible. La page des mods n'indique pas laquelle tourne actuellement.", alertOtherMap: "Le dossier cible contient une carte que le serveur n'utilise pas : {x}", alertOtherMapText: "Elle sera retirée du dossier cible lors de la synchronisation et déplacée vers _ServerDownloads\\_Archiv.", e_loginFailed: "Échec de la connexion à l'interface web. Vérifiez le nom d'utilisateur et le mot de passe.",
+    h2First: "La première synchronisation avec ce serveur télécharge chaque mod une fois ({size}). Selon votre connexion, cela prend un moment, ensuite c'est rapide.", firstNote: "Première synchronisation avec ce serveur : chaque mod est téléchargé une fois et comparé avec votre fichier, {size} au total. Selon votre connexion, cela prend un moment, environ {a} à 50 Mbit/s, environ {b} à 16 Mbit/s. Les synchronisations suivantes ne téléchargent que ce qui change sur le serveur.", eta: "encore env. {t}", durMin: "{n} min", durLess: "moins d'1 min", durHour: "{h} h {m} min",
+    doneStats: "Synchronisation terminée. {c} mods comparés avec le serveur : {i} identiques (rien enregistré), {s} enregistrés ({b}).", doneStatsNone: "Synchronisation terminée, le dossier correspond maintenant au serveur. Rien n'a dû être téléchargé.",
+    rvTitle: "Revérifier des mods avec le serveur", rvSub: "Cochez les mods qui affichent un triangle rouge dans les détails du serveur en jeu. Seuls ceux-ci seront retéléchargés depuis le serveur et comparés lors de la prochaine synchronisation.", rvSelected: "Revérifier la sélection", rvSelectedN: "Revérifier {n} mods sélectionnés", rvAll: "Tout revérifier", rvSearch: "Chercher un mod", rvAllConfirm: "Vraiment retélécharger tous les mods depuis le serveur ? Cela peut être long selon le nombre de mods.",
+    step1: "Vérifier", step2: "Synchroniser", step3: "Activer", step4: "Rejoindre", doCheck: "Vérifier le serveur", doRecheck: "Vérifier à nouveau", doApply: "Synchroniser maintenant", doActivate: "Activer le dossier", doLaunch: "Lancer le jeu", h1: "Lit la liste des mods du serveur et la compare avec votre bibliothèque. Rien n'est encore modifié.", h1Blocked: "Corrigez d'abord le problème ci-dessus, puis vérifiez à nouveau.", h2: "Télécharge les mods manquants et différents et construit le dossier pour qu'il corresponde exactement au serveur.", h3: "Règle le jeu sur ce dossier pour qu'il charge exactement les mods du serveur.", h3Game: "Fermez d'abord le jeu, sinon il écrase le réglage.", h4: "Tout est prêt. Lancez le jeu et rejoignez le serveur.", h4Game: "Le jeu est déjà lancé. S'il a été démarré avant l'activation, relancez-le une fois.", reverify: "Problème pour rejoindre ? Revérifier tous les mods avec le serveur", editServer: "Modifier le serveur", e_launchFailed: "Impossible de lancer le jeu : {a}",
+    gCheck: "Présent, sera comparé avec le serveur", gCheckDesc: "Même version et même taille que sur le serveur. Seul le hash du jeu montre si le fichier est exactement identique. Le fichier du serveur est téléchargé une fois lors de la synchronisation : s'il est identique, votre fichier reste lié, sinon le fichier du serveur va dans le dossier cible.", sCheck: "Télécharger depuis le serveur et comparer", 
+    mapPill: "Carte : {m}", mapNone: "Pas de carte mod (carte du jeu de base)", tMap: "Carte", alertNoMapFolder: "Aucun dossier de carte pour la carte du serveur {m}", alertNoMapFolderText: "{r} ne contient aucun dossier avec cette carte. Le dossier cible est créé à part et contient alors exactement cette carte.", alertMapFolder: "Dossier de carte pour {m} présent : {f}", alertMapFolderText: "Le dossier cible reste séparé afin de correspondre exactement au serveur.", alertTwoMaps: "Deux cartes dans le dossier cible", alertTwoMapsText: "Le dossier cible contient déjà {x}, le serveur utilise {m}. Un dossier de mods ne doit contenir qu'une seule carte. Veuillez choisir un autre dossier cible.", alertMapSwitch: "Le serveur a changé de carte", alertMapSwitchText: "{x} est encore dans le dossier cible et sera retiré lors de la synchronisation.", alertServerTwoMaps: "Plusieurs cartes sont actives sur le serveur", alertServerTwoMapsText: "Un dossier de mods ne doit contenir qu'une seule carte. La synchronisation est bloquée.", e_twoMaps: "Deux cartes : le dossier cible contient déjà {a}. Veuillez choisir un autre dossier cible.", e_serverTwoMaps: "Plusieurs cartes sont actives sur le serveur, un dossier de mods ne doit en contenir qu'une."
+  }
+};
+const LOCALES = { de: "de-DE", en: "en-GB", fr: "fr-FR" };
+const UNITS = { de: ["KB", "MB", "GB"], en: ["KB", "MB", "GB"], fr: ["Ko", "Mo", "Go"] };
+let LANG = "de";
+
+function t(key, vars) {
+  const s = (I18N[LANG] && I18N[LANG][key]) || I18N.de[key] || key;
+  return vars ? s.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m)) : s;
+}
+const tn = (key, n) => (Number(n) === 1 && I18N[LANG][key + "1"] ? t(key + "1") : t(key, { n: fmt(n) }));
+const tErr = (code, arg) => (I18N.de["e_" + code] ? t("e_" + code, { a: arg ?? "" }) : (arg || code));
+
+const GROUPS = [
+  { key: "download", label: "gDownload", desc: "gDownloadDesc", color: "var(--s-download)" },
+  { key: "update", label: "gUpdate", desc: "gUpdateDesc", color: "var(--s-update)" },
+  { key: "check", label: "gCheck", desc: "gCheckDesc", color: "var(--s-check)" },
+  { key: "link", label: "gLink", desc: "gLinkDesc", color: "var(--s-link)" },
+  { key: "remove", label: "gRemove", desc: "gRemoveDesc", color: "var(--s-remove)" },
+  { key: "nodl", label: "gNodl", desc: "gNodlDesc", color: "var(--s-nodl)" },
+  { key: "error", label: "gError", desc: "gErrorDesc", color: "var(--s-error)" },
+  { key: "ok", label: "gOk", desc: "gOkDesc", color: "var(--s-ok)", compact: true },
+  { key: "skipmap", label: "gSkip", desc: "gSkipDesc", color: "#3a3f44", compact: true },
+  { key: "inactive", label: "gInactive", desc: "gInactiveDesc", color: "#6b5a3a", compact: true }
+];
+const PHASES = { check: ["fetch", "probe", "scan", "compare"], verify: ["fetch", "probe", "scan", "compare"], apply: ["remove", "download", "link", "recheck"] };
+const PHASE_KEY = { start: "pStart", fetch: "pFetch", probe: "pProbe", scan: "pScan", verify: "pVerify", compare: "pCompare", remove: "pRemove", download: "pDownload", link: "pLink", recheck: "pRecheck" };
+
+const state = { st: null, sel: null, plan: null, filter: "all", query: "", polling: false, gameRunning: false, editing: null };
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmt = n => Number(n).toLocaleString(LOCALES[LANG]);
+function fmtBytes(b) {
+  b = Number(b) || 0;
+  const u = UNITS[LANG];
+  if (b >= 1073741824) return (b / 1073741824).toLocaleString(LOCALES[LANG], { maximumFractionDigits: 2 }) + " " + u[2];
+  if (b >= 1048576) return (b / 1048576).toLocaleString(LOCALES[LANG], { maximumFractionDigits: b >= 104857600 ? 0 : 1 }) + " " + u[1];
+  return Math.max(1, Math.round(b / 1024)).toLocaleString(LOCALES[LANG]) + " " + u[0];
+}
+const mono = s => esc((s || "?").replace(/^FS25_/i, "").replace(/[^A-Za-zÄÖÜäöü0-9]/g, "").slice(0, 2).toUpperCase());
+const hostOf = u => { try { return new URL(u).host; } catch { return u || ""; } };
+const fmtTime = iso => (iso ? new Date(iso).toLocaleString(LOCALES[LANG], { dateStyle: "medium", timeStyle: "short" }) : "");
+const svg = (size, inner, sw) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw || 2}" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+const P = {
+  server: '<rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01"/>',
+  folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  check: '<path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/>',
+  shield: '<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/>',
+  sync: '<path d="M12 4v11m-4-4 4 4 4-4"/><path d="M5 20h14"/>',
+  play: '<path d="M7 4v16l13-8z"/>',
+  edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+  map: '<path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/>'
+};
+const ALERT_ICON = {
+  warn: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fab219" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17h.01"/></svg>',
+  err: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e06666" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>',
+  info: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6aa6ee" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>'
+};
+
+async function api(path, body) {
+  const opt = { headers: { "X-Token": token } };
+  if (body !== undefined) { opt.method = "POST"; opt.body = JSON.stringify(body); opt.headers["Content-Type"] = "application/json"; }
+  const r = await fetch(path, opt);
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error ? tErr(data.error, data.arg) : t("errorN", { n: r.status }));
+  return data;
+}
+
+function toast(msg, kind) {
+  const el = $("toast");
+  $("toastText").textContent = msg;
+  el.className = "toast show" + (kind === true ? " err" : kind === "ok" ? " ok" : "");
+  clearTimeout(toast.h);
+  toast.h = setTimeout(() => el.classList.remove("show"), kind === true ? 7000 : 4200);
+}
+
+function applyStaticTexts() {
+  document.documentElement.lang = LANG;
+  document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
+}
+
+function currentServer() { return state.st && state.st.servers.find(s => s.Id === state.sel); }
+
+function renderRail() {
+  const st = state.st;
+  const list = $("srvList");
+  list.innerHTML = st.servers.map(s => `
+    <button class="srv ${s.Id === state.sel ? "active" : ""}" data-id="${esc(s.Id)}">
+      <div class="srv-ico">${svg(20, P.server, 1.9)}${s.IsActive ? '<span class="live"></span>' : ""}</div>
+      <div style="min-width:0"><div class="srv-name">${esc(s.Name)}</div><div class="srv-host">${esc(hostOf(s.Url))}</div></div>
+    </button>`).join("");
+  list.querySelectorAll(".srv").forEach(b => b.onclick = () => selectServer(b.dataset.id));
+  const lib = $("libPath");
+  lib.textContent = st.library || t("notSet");
+  lib.classList.toggle("missing", !st.libraryExists);
+  $("libOpen").disabled = !st.libraryExists;
+  $("activePath").textContent = st.activeOverride || t("defaultFolder");
+  $("activeActs").innerHTML = st.canRestore ? `<button class="btn small" id="restoreBtn">${esc(t("restorePrev"))}</button>` : "";
+  if (st.canRestore) $("restoreBtn").onclick = restorePrevious;
+}
+
+function counts(plan) {
+  const c = {};
+  for (const r of plan.Rows) c[r.Status] = (c[r.Status] || 0) + 1;
+  return c;
+}
+
+function renderMain() {
+  const main = $("main");
+  const st = state.st;
+  if (!st.libraryExists) {
+    main.innerHTML = `<div class="empty"><div class="big">${svg(34, P.folder)}</div><h3>${esc(t("noLibTitle"))}</h3><p>${esc(t("noLibText"))}</p><button class="btn primary" id="emptyLib">${esc(t("pickLibrary"))}</button></div>`;
+    $("emptyLib").onclick = openLibModal;
+    return;
+  }
+  const s = currentServer();
+  if (!s) {
+    main.innerHTML = `<div class="empty"><div class="big">${svg(34, P.server, 1.8)}</div><h3>${esc(t("noSrvTitle"))}</h3><p>${esc(t("noSrvText"))}</p>
+      <div class="steps">${[1, 2, 3, 4].map(n => `<div><b>${n}</b><span>${esc(t("step" + n))}</span></div>`).join("")}</div>
+      <button class="btn primary" id="emptyAdd">${esc(t("addServer"))}</button></div>`;
+    $("emptyAdd").onclick = () => openServerModal(null);
+    return;
+  }
+  const plan = state.plan;
+  const c = plan ? counts(plan) : {};
+  const pending = (c.download || 0) + (c.update || 0) + (c.check || 0) + (c.link || 0) + (c.remove || 0);
+  const busy = !!(st.job && !st.job.Finished);
+  const blockedByGame = state.gameRunning && s.IsActive;
+  let statSub = "";
+  if (plan) statSub = pending === 0 && !(c.nodl || c.error) ? t("allGood") : pending > 0 ? tn("toDo", pending) : "";
+  const meta = [
+    `<span class="pill mono">${svg(13, P.globe)}<span>${esc(hostOf(s.Url))}</span></span>`,
+    `<span class="pill mono link" id="openTarget" title="${esc(s.Target)}">${svg(13, P.folder)}<span>${esc(s.Target)}</span></span>`
+  ];
+  if (plan && plan.RunningMatched) meta.unshift(`<span class="pill">${svg(13, P.map)}<span>${esc(plan.RunningSlot ? t("runPillSlot", { m: plan.RunningMap, s: plan.RunningSlot }) : t("runPill", { m: plan.RunningMap }))}</span></span>`);
+  else if (plan) meta.unshift(`<span class="pill">${svg(13, P.map)}<span>${esc(plan.MapCount > 1 ? t("mapsPill", { m: plan.MapTitles.join(", ") }) : plan.MapTitle ? t("mapPill", { m: plan.MapTitle }) : t("mapNone"))}</span></span>`);
+  if (plan && plan.Dlcs && plan.Dlcs.length) meta.push(`<span class="pill">${svg(13, P.shield)}<span>${esc(plan.DlcKnown ? t("dlcPill", { a: fmt(plan.Dlcs.filter(d => d.Installed).length), b: fmt(plan.Dlcs.length) }) : t("dlcPillUnknown", { b: fmt(plan.Dlcs.length) }))}</span></span>`);
+  if (plan && plan.CanManage) meta.push(`<span class="pill">${svg(13, P.shield)}<span>${esc(t("adminPill"))}</span></span>`);
+  if (plan) meta.push(`<span class="pill">${svg(13, P.clock)}<span>${esc(t("lastCheck", { t: fmtTime(plan.Created) }))}${plan.Thorough ? " · " + esc(t("thoroughDone")) : ""}</span></span>`);
+
+  let html = `<section class="hero"><div class="hero-inner"><div style="min-width:0">
+      <div class="eyebrow">${esc(t("serverEyebrow"))}${s.IsActive ? `<span class="badge-live">${esc(t("active"))}</span>` : ""}</div>
+      <div class="title-row"><h2>${esc(s.Name)}</h2><button class="icon-btn" id="btnEdit" title="${esc(t("editServer"))}" ${busy ? "disabled" : ""}>${svg(16, P.edit, 2.2)}</button></div><div class="hero-meta">${meta.join("")}</div></div>
+      ${plan ? `<div class="hero-stat"><div class="num">${fmt(plan.ServerTotal)}</div><div class="lbl">${esc(t("modsOnServer"))}</div><div class="sub">${esc(statSub)}</div></div>` : ""}
+    </div>
+    ${flowHtml(s, plan, c, pending, busy)}`;
+  if (plan && plan.Rows.length) {
+    const present = GROUPS.filter(g => c[g.key]);
+    const segs = present.map(g => `<div class="seg" data-g="${g.key}" style="flex:${c[g.key]};background:${g.color}" data-tip="${esc(t(g.label))}: ${fmt(c[g.key])}"></div>`).join("");
+    const legend = present.map(g => `<button data-g="${g.key}"><span class="sw" style="background:${g.color}"></span>${esc(t(g.label))} <b>${fmt(c[g.key])}</b></button>`).join("");
+    html += `<div class="compo"><div class="bar">${segs}</div><div class="legend">${legend}</div></div>`;
+  }
+  html += `</section>`;
+
+  if (plan) {
+    const chips = [`<button class="chip ${state.filter === "all" ? "on" : ""}" data-f="all">${esc(t("all"))} <span class="n">${fmt(new Set(plan.Rows.map(r => r.FileName)).size)}</span></button>`]
+      .concat(GROUPS.filter(g => c[g.key]).map(g => `<button class="chip ${state.filter === g.key ? "on" : ""}" data-f="${g.key}"><span class="dot" style="background:${g.color}"></span>${esc(t(g.label))} <span class="n">${fmt(c[g.key])}</span></button>`));
+    html += `<div class="toolbar"><div class="chips">${chips.join("")}</div><label class="search"><span style="color:var(--muted);display:flex">${svg(15, P.search, 2.2)}</span><input id="q" placeholder="${esc(t("search"))}" value="${esc(state.query)}"></label></div>`;
+  }
+
+  html += `<div class="content">`;
+  if (blockedByGame) html += alertHtml("warn", t("alertGame"), t("alertGameText"));
+  if (plan) {
+    const mapName = plan.MapTitle || plan.MapModName;
+    const others = (plan.TargetOtherMaps || []).join(", ");
+    const md = missingDlcs(plan);
+    if (md.length) html += alertHtml("err", t("alertDlcMissing", { x: md.map(d => d.Title).join(", ") }), t("alertDlcMissingText"));
+    else if (!plan.DlcKnown && plan.Dlcs && plan.Dlcs.length) html += alertHtml("info", t("alertDlcUnknown", { x: plan.Dlcs.map(d => d.Title).join(", ") }), t("alertDlcUnknownText"));
+    if (plan.RunningMap && !plan.RunningMatched && plan.MapCount > 0) html += alertHtml("info", t("alertRunUnknown", { m: plan.RunningMap }), t("alertRunUnknownText"));
+    if (plan.MapCount > 1) html += alertHtml("warn", t("alertServerMaps", { m: plan.MapTitles.join(", ") }), t("alertServerMapsText"));
+    if (plan.TargetOtherMaps.length && plan.ForeignTarget) html += alertHtml("warn", t("alertOtherMap", { x: others }), t("alertOtherMapText"));
+    else if (plan.TargetOtherMaps.length) html += alertHtml("info", t("alertMapSwitch"), t("alertMapSwitchText", { x: others }));
+    if (plan.MapsRootKnown && plan.MapModName && !plan.TargetHasMap && !plan.MapFolders.length) html += alertHtml("warn", t("alertNoMapFolder", { m: mapName }), t("alertNoMapFolderText", { r: plan.MapsRoot }));
+    if (plan.MapsRootKnown && !plan.TargetHasMap && plan.MapFolders.length) html += alertHtml("info", t("alertMapFolder", { m: mapName, f: plan.MapFolders.join(", ") }), t("alertMapFolderText"));
+    if (!plan.SameVolume) html += alertHtml("info", t("alertOtherVol"), t("alertOtherVolText"));
+    if (plan.ForeignTarget && c.remove) html += alertHtml("warn", t("alertForeign"), t("alertForeignText"));
+    if (c.nodl) html += alertHtml("err", tn("alertNodl", c.nodl), t("alertNodlText"));
+    html += groupsHtml(plan);
+    if (plan.InactiveOnServer && !plan.CanManage) html += `<p style="color:var(--muted);font-size:13px;margin-top:28px">${esc(t("alertInactive", { n: fmt(plan.InactiveOnServer) }))}</p>`;
+    if (s.Synced && pending === 0) html += `<div class="reverify"><button class="linkish" id="btnReverify" title="${esc(t("verifyTip"))}" ${busy ? "disabled" : ""}>${esc(t("reverify"))}</button></div>`;
+  } else {
+    html += `<div class="empty" style="padding-top:60px"><div class="big">${svg(34, P.check)}</div><h3>${esc(t("notChecked"))}</h3><p>${esc(t("notCheckedText"))}</p></div>`;
+  }
+  html += `</div>`;
+  main.innerHTML = html;
+
+  const act = $("flowBtn");
+  if (act) act.onclick = () => ({ check: () => startCheck(false), apply: openApplyModal, activate, launch }[act.dataset.a])();
+  if ($("btnReverify")) $("btnReverify").onclick = openReverify;
+  $("btnEdit").onclick = () => openServerModal(s);
+  $("openTarget").onclick = () => api("/api/open", { path: s.Target }).catch(e => toast(e.message, true));
+  main.querySelectorAll(".chip").forEach(b => b.onclick = () => { state.filter = b.dataset.f; renderMain(); });
+  main.querySelectorAll(".seg, .legend button").forEach(b => b.onclick = () => { state.filter = b.dataset.g; renderMain(); });
+  bindTips(main);
+  const q = $("q");
+  if (q) q.oninput = () => { state.query = q.value; renderGroupsOnly(); };
+}
+
+function missingDlcs(plan) { return plan && plan.Dlcs ? plan.Dlcs.filter(d => d.Installed === false) : []; }
+function flowHtml(s, plan, c, pending, busy) {
+  const dlcMissing = missingDlcs(plan).length > 0;
+  const blocked = !!(plan && (c.nodl || c.error || dlcMissing));
+  let step, action, label, hint, disabled = busy;
+  if (!plan || blocked) { step = 1; action = "check"; label = t(plan ? "doRecheck" : "doCheck"); hint = t(!blocked ? "h1" : dlcMissing ? "h1Dlc" : "h1Blocked"); }
+  else if (pending > 0) { step = 2; action = "apply"; label = t("doApply"); hint = c.check ? t("h2First", { size: fmtBytes(plan.DownloadBytes) }) : t("h2"); if (state.gameRunning && s.IsActive) { disabled = true; hint = t("alertGameText"); } }
+  else if (!s.IsActive) { step = 3; action = "activate"; label = t("doActivate"); hint = t("h3"); if (state.gameRunning) { disabled = true; hint = t("h3Game"); } }
+  else { step = 4; action = state.gameRunning ? null : "launch"; label = t("doLaunch"); hint = t(state.gameRunning ? "h4Game" : "h4"); }
+  const icons = { check: P.check, apply: P.sync, activate: P.play, launch: P.play };
+  const steps = [1, 2, 3, 4].map(n => {
+    const cls = n < step ? "done" : n === step ? "now" : "";
+    const mark = n < step ? svg(13, '<path d="m5 12 5 5 9-10"/>', 3) : n;
+    return `${n > 1 ? `<span class="fline ${n <= step ? "done" : ""}"></span>` : ""}<span class="fstep ${cls}"><b>${mark}</b>${esc(t("step" + n))}</span>`;
+  }).join("");
+  const badge = action === "apply" && pending ? `<span class="badge">${fmt(pending)}</span>` : "";
+  const btn = action ? `<button class="btn primary big" id="flowBtn" data-a="${action}" ${disabled ? "disabled" : ""}>${svg(16, icons[action], 2.3)}${esc(label)}${badge}</button>` : "";
+  return `<div class="flow"><div class="flow-steps">${steps}</div><div class="flow-act"><span class="hint">${esc(hint)}</span>${btn}</div></div>`;
+}
+
+const rv = { sel: new Set() };
+function openReverify() {
+  rv.sel = new Set();
+  $("rvQ").value = "";
+  $("rvQ").placeholder = t("rvSearch");
+  renderReverify();
+  showModal("rvModal");
+  setTimeout(() => $("rvQ").focus(), 50);
+}
+function renderReverify() {
+  const q = $("rvQ").value.trim().toLowerCase();
+  const rows = (state.plan ? state.plan.Rows : []).filter(r => !["remove", "nodl", "inactive", "skipmap"].includes(r.Status))
+    .filter(r => !q || (r.Title || "").toLowerCase().includes(q) || (r.FileName || "").toLowerCase().includes(q))
+    .sort((a, b) => (a.Title || "").localeCompare(b.Title || "", LOCALES[LANG]));
+  $("rvList").innerHTML = rows.map(r => `<label class="rv-item ${rv.sel.has(r.FileName) ? "on" : ""}" data-f="${esc(r.FileName)}"><input type="checkbox" ${rv.sel.has(r.FileName) ? "checked" : ""}><div style="min-width:0"><div class="t">${esc(r.Title || r.ModName)}</div><div class="f">${esc(r.FileName)}</div></div><span class="v">${r.Version ? "v" + esc(r.Version) : ""}</span></label>`).join("");
+  $("rvList").querySelectorAll(".rv-item input").forEach(cb => cb.onchange = () => {
+    const f = cb.closest(".rv-item").dataset.f;
+    if (cb.checked) rv.sel.add(f); else rv.sel.delete(f);
+    cb.closest(".rv-item").classList.toggle("on", cb.checked);
+    updateReverifyFoot();
+  });
+  updateReverifyFoot();
+}
+function updateReverifyFoot() {
+  const n = rv.sel.size;
+  $("rvGo").disabled = n === 0;
+  $("rvGo").textContent = n ? t("rvSelectedN", { n: fmt(n) }) : t("rvSelected");
+}
+$("rvQ").oninput = renderReverify;
+async function forgetAndCheck(body) {
+  closeModal();
+  try { await api("/api/forget", Object.assign({ id: state.sel }, body)); await startCheck(false); } catch (e) { toast(e.message, true); }
+}
+$("rvGo").onclick = () => forgetAndCheck({ mods: [...rv.sel] });
+$("rvAll").onclick = () => { if (confirm(t("rvAllConfirm"))) forgetAndCheck({ all: true }); };
+
+async function launch() {
+  try { await api("/api/launch", {}); } catch (e) { toast(e.message, true); }
+}
+
+function renderGroupsOnly() {
+  const wrap = $("groupsWrap");
+  if (wrap && state.plan) { wrap.outerHTML = groupsHtml(state.plan); bindTips($("main")); }
+}
+
+function alertHtml(kind, title, text) {
+  return `<div class="alert ${kind === "err" ? "" : kind}">${ALERT_ICON[kind]}<div><strong>${esc(title)}</strong><span>${esc(text)}</span></div></div>`;
+}
+
+function rowMatches(r) {
+  if (state.filter !== "all" && r.Status !== state.filter) return false;
+  const q = state.query.trim().toLowerCase();
+  if (!q) return true;
+  return (r.Title || "").toLowerCase().includes(q) || (r.FileName || "").toLowerCase().includes(q) || (r.Author || "").toLowerCase().includes(q);
+}
+
+function groupsHtml(plan) {
+  let out = `<div id="groupsWrap">`;
+  for (const g of GROUPS) {
+    const rows = plan.Rows.filter(r => r.Status === g.key && rowMatches(r)).sort((a, b) => (Number(!!b.IsMap)-Number(!!a.IsMap)) || (a.Title || "").localeCompare(b.Title || "", LOCALES[LANG]));
+    if (!rows.length) continue;
+    out += `<section class="group ${g.compact ? "compact" : ""}"><div class="group-head"><div class="group-title"><span class="sw" style="background:${g.color}"></span><h3>${esc(t(g.label))}</h3><span class="count">${fmt(rows.length)}</span></div><p class="group-desc">${esc(t(g.desc, { size: fmtBytes(rows.reduce((a, r) => a + Math.max(0, r.Bytes), 0)) }))}</p></div>
+      <div class="grid">${rows.map(r => cardHtml(r, g)).join("")}</div></section>`;
+  }
+  return out + `</div>`;
+}
+
+function cardHtml(r, g) {
+  const fallback = mono(r.Title || r.ModName);
+  const ico = r.HasIcon
+    ? `<div class="ico"><img loading="lazy" src="/icon?id=${encodeURIComponent(state.sel)}&i=${r.I}&t=${token}&v=${encodeURIComponent(state.plan.Created)}" alt="" onerror="this.parentNode.textContent='${fallback}'"></div>`
+    : `<div class="ico">${r.IsDir ? svg(22, P.folder) : fallback}</div>`;
+  const tags = [];
+  if (r.IsMap) tags.push(`<span class="tag good">${esc(t("tMap"))}</span>`);
+  if (r.Version) tags.push(`<span class="tag">v${esc(r.Version)}</span>`);
+  if (r.Bytes > 0) tags.push(`<span class="tag">${esc(fmtBytes(r.Bytes))}</span>`);
+  if (r.Status === "update" && r.LocalVersion) tags.push(`<span class="tag warn">${esc(t("tLocal", { v: "v" + r.LocalVersion }))}</span>`);
+  if (r.Status === "link" && r.SourceFolder) tags.push(`<span class="tag">${esc(t("tFrom", { f: r.SourceFolder === "_ServerDownloads" ? t("tStore") : r.SourceFolder === "." ? t("library") : r.SourceFolder }))}</span>`);
+  if (r.Verified) tags.push(`<span class="tag good">✓ ${esc(t("tVerified"))}</span>`);
+  if (r.Status !== "remove") tags.push(`<span class="tag">${esc(r.ModHub ? t("tModHub") : t("tNoModHub"))}</span>`);
+  if (r.Status === "nodl" && r.InTarget) tags.push(`<span class="tag good">${esc(t("tInTarget"))}</span>`);
+  if (r.IsDir) tags.push(`<span class="tag">${esc(t("tFolder"))}</span>`);
+  let note = "";
+  if (r.Status === "remove") note = `<div class="note">${esc(r.RemoveMode === "unlink" ? t("tUnlink") : t("tArchive"))}</div>`;
+  if (r.Status === "error") note = `<div class="note" style="color:#ff9b9b">${esc(tErr(r.ErrorCode, r.ErrorArg))}</div>`;
+  const sub = r.Author && r.Status !== "remove" ? `${esc(r.FileName)} · ${esc(r.Author)}` : esc(r.FileName);
+  return `<article class="card"><span class="stripe" style="background:${g.color}"></span>${ico}<div class="card-body"><div class="card-title">${esc(r.Title || r.ModName)}</div><div class="card-name" title="${esc(r.FileName)}">${sub}</div><div class="tags">${tags.join("")}</div>${note}</div></article>`;
+}
+
+function bindTips(root) {
+  const tip = $("tip");
+  root.querySelectorAll("[data-tip]").forEach(el => {
+    el.onmousemove = e => { tip.textContent = el.dataset.tip; tip.style.left = (e.clientX + 14) + "px"; tip.style.top = (e.clientY + 14) + "px"; tip.classList.add("show"); };
+    el.onmouseleave = () => tip.classList.remove("show");
+  });
+}
+
+function showModal(id) {
+  document.querySelectorAll(".modal.show").forEach(m => m.classList.remove("show"));
+  $("overlay").classList.add("show");
+  $(id).classList.add("show");
+}
+function closeModal() {
+  if ($("jobModal").classList.contains("show")) return;
+  document.querySelectorAll(".modal.show").forEach(m => m.classList.remove("show"));
+  $("overlay").classList.remove("show");
+}
+document.querySelectorAll("[data-close]").forEach(b => b.onclick = closeModal);
+$("overlay").onclick = closeModal;
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+
+async function loadState() {
+  state.st = await api("/api/state");
+  state.gameRunning = state.st.gameRunning;
+  if (!state.sel || !state.st.servers.some(s => s.Id === state.sel)) state.sel = state.st.servers.length ? state.st.servers[0].Id : null;
+}
+
+async function loadPlan() {
+  state.plan = null;
+  if (!state.sel) return;
+  const p = await api("/api/plan?id=" + encodeURIComponent(state.sel));
+  state.plan = p.none ? null : p;
+}
+
+async function refresh() {
+  await loadState();
+  await loadPlan();
+  renderRail();
+  renderMain();
+}
+
+async function selectServer(id) {
+  state.sel = id;
+  state.filter = "all";
+  state.query = "";
+  try { await loadPlan(); } catch (e) { toast(e.message, true); }
+  renderRail();
+  renderMain();
+  $("main").scrollTop = 0;
+}
+
+let targetTouched = false;
+function updateTargetHint() {
+  const lib = state.st.library || "";
+  const tgt = $("fTarget").value.trim();
+  const hint = $("fTargetHint");
+  if (!tgt || !lib) { hint.textContent = ""; hint.className = "hint"; return; }
+  const same = tgt.slice(0, 2).toLowerCase() === lib.slice(0, 2).toLowerCase();
+  hint.textContent = same ? t("hintSameVol") : t("hintOtherVol");
+  hint.className = "hint" + (same ? "" : " warn");
+}
+async function suggestTarget() {
+  if (targetTouched || state.editing) return;
+  try {
+    const url = $("fUrl").value.trim();
+    const r = await api("/api/suggest", { name: $("fName").value.trim(), url, user: $("fUser").value.trim(), pass: $("fPass").value, id: state.editing });
+    if (!targetTouched && url === $("fUrl").value.trim()) { $("fTarget").value = r.path; updateTargetHint(); }
+  } catch {}
+}
+function openServerModal(s) {
+  state.editing = s ? s.Id : null;
+  targetTouched = !!s;
+  $("srvModalTitle").textContent = t(s ? "srvEdit" : "srvNew");
+  $("fName").value = s ? s.Name : "";
+  $("fUrl").value = s ? s.Url : "";
+  $("fTarget").value = s ? s.Target : "";
+  $("fUser").value = s && s.Username ? s.Username : "";
+  $("fUser").placeholder = t("fUser");
+  $("fPass").value = "";
+  $("fPass").placeholder = s && s.HasPassword ? t("fPassKeep") : t("fPass");
+  $("srvDelete").style.display = s ? "" : "none";
+  showModal("srvModal");
+  if (!s) suggestTarget();
+  updateTargetHint();
+  setTimeout(() => $("fName").focus(), 50);
+}
+$("fName").oninput = () => { clearTimeout(suggestTarget.h); suggestTarget.h = setTimeout(suggestTarget, 250); };
+$("fUrl").oninput = () => { clearTimeout(suggestTarget.h); suggestTarget.h = setTimeout(suggestTarget, 600); };
+$("fUser").oninput = $("fPass").oninput = () => { clearTimeout(suggestTarget.h); suggestTarget.h = setTimeout(suggestTarget, 800); };
+$("fTarget").oninput = () => { targetTouched = true; updateTargetHint(); };
+$("fTargetPick").onclick = async () => {
+  try {
+    const r = await api("/api/pick", { title: t("fTarget"), start: $("fTarget").value.trim() || state.st.library });
+    if (r.path) { $("fTarget").value = r.path; targetTouched = true; updateTargetHint(); }
+  } catch (e) { toast(e.message, true); }
+};
+$("srvSave").onclick = async () => {
+  try {
+    const isNew = !state.editing;
+    const body = { id: state.editing, name: $("fName").value, url: $("fUrl").value, target: $("fTarget").value, user: $("fUser").value };
+    if ($("fPass").value) body.pass = $("fPass").value;
+    const r = await api("/api/server/save", body);
+    state.sel = r.savedId;
+    closeModal();
+    await refresh();
+    if (isNew) startCheck(false);
+  } catch (e) { toast(e.message, true); }
+};
+$("srvDelete").onclick = async () => {
+  const s = currentServer();
+  if (!s || !confirm(t("deleteConfirm", { n: s.Name }))) return;
+  try { await api("/api/server/delete", { id: s.Id }); state.sel = null; closeModal(); await refresh(); } catch (e) { toast(e.message, true); }
+};
+
+function openLibModal() {
+  $("fLib").value = state.st.library || "";
+  showModal("libModal");
+}
+$("libChange").onclick = openLibModal;
+$("libOpen").onclick = () => api("/api/open", { path: state.st.library }).catch(e => toast(e.message, true));
+$("fLibPick").onclick = async () => {
+  try {
+    const r = await api("/api/pick", { title: t("library"), start: $("fLib").value.trim() });
+    if (r.path) $("fLib").value = r.path;
+  } catch (e) { toast(e.message, true); }
+};
+$("libSave").onclick = async () => {
+  try { await api("/api/library", { path: $("fLib").value }); closeModal(); await refresh(); } catch (e) { toast(e.message, true); }
+};
+$("addSrv").onclick = () => { if (!state.st.libraryExists) openLibModal(); else openServerModal(null); };
+
+function openApplyModal() {
+  const p = state.plan;
+  if (!p) return;
+  const c = counts(p);
+  const rows = p.Rows;
+  const sumBytes = st => rows.filter(r => r.Status === st).reduce((a, r) => a + Math.max(0, r.Bytes), 0);
+  const unlink = rows.filter(r => r.Status === "remove" && r.RemoveMode === "unlink").length;
+  const archive = rows.filter(r => r.Status === "remove" && r.RemoveMode !== "unlink").length;
+  const line = (color, label, sub, val) => `<div class="sumrow"><span class="sw" style="background:${color}"></span><div>${esc(label)}${sub ? `<small>${esc(sub)}</small>` : ""}</div><b>${val}</b></div>`;
+  let body = `<div class="sumlist">`;
+  if (c.download) body += line("var(--s-download)", t("sDownload"), fmtBytes(sumBytes("download")), fmt(c.download));
+  if (c.update) body += line("var(--s-update)", t("sUpdate"), fmtBytes(sumBytes("update")), fmt(c.update));
+  if (c.check) body += line("var(--s-check)", t("sCheck"), fmtBytes(sumBytes("check")), fmt(c.check));
+  if (c.link) body += line("var(--s-link)", p.SameVolume ? t("sLink") : t("sCopy"), "", fmt(c.link));
+  if (c.remove) body += line("var(--s-remove)", t("sRemove"), t("sRemoveSub", { a: fmt(unlink), b: fmt(archive) }), fmt(c.remove));
+  if (!c.download && !c.update && !c.check && !c.link && !c.remove) body += `<p>${esc(t("nothingToDo"))}</p>`;
+  body += `</div>`;
+  if (c.check) {
+    const bits = p.DownloadBytes * 8;
+    body += `<div class="alert info" style="margin:14px 0 0">${ALERT_ICON.info}<div><span>${esc(t("firstNote", { size: fmtBytes(p.DownloadBytes), a: fmtDur(bits / 50e6), b: fmtDur(bits / 16e6) }))}</span></div></div>`;
+  }
+  const needConfirm = !!(p.ForeignTarget && c.remove);
+  if (needConfirm) body += `<label class="check-line"><input type="checkbox" id="foreignOk"><span>${esc(t("confirmForeign"))}</span></label>`;
+  $("applySub").textContent = t("applySub", { p: p.Target });
+  $("applyBody").innerHTML = body;
+  $("applyGo").disabled = needConfirm;
+  if (needConfirm) $("foreignOk").onchange = e => { $("applyGo").disabled = !e.target.checked; };
+  showModal("applyModal");
+}
+$("applyGo").onclick = async () => {
+  closeModal();
+  try { await api("/api/apply", { id: state.sel }); pollJob(); } catch (e) { toast(e.message, true); }
+};
+
+async function startCheck(thorough) {
+  try { await api("/api/check", { id: state.sel, thorough }); pollJob(); } catch (e) { toast(e.message, true); }
+}
+
+async function activate() {
+  try { await api("/api/activate", { id: state.sel }); await refresh(); toast(t("activated"), "ok"); } catch (e) { toast(e.message, true); }
+}
+async function restorePrevious() {
+  try { await api("/api/deactivate", {}); await refresh(); toast(t("restored"), "ok"); } catch (e) { toast(e.message, true); }
+}
+
+function fmtDur(sec) {
+  if (!isFinite(sec) || sec < 60) return t("durLess");
+  const min = Math.round(sec / 60);
+  if (min < 60) return t("durMin", { n: fmt(min) });
+  return t("durHour", { h: fmt(Math.floor(min / 60)), m: fmt(min % 60) });
+}
+const speed = { t: 0, b: 0, rate: 0, phase: "" };
+function speedText(j) {
+  const now = Date.now();
+  if (speed.phase !== j.Phase || j.BytesDone < speed.b) { speed.t = now; speed.b = j.BytesDone; speed.rate = 0; speed.phase = j.Phase; return ""; }
+  const dt = (now-speed.t) / 1000;
+  if (dt >= 1) {
+    const r = (j.BytesDone-speed.b) / dt;
+    speed.rate = speed.rate ? speed.rate * 0.7 + r * 0.3 : r;
+    speed.t = now;
+    speed.b = j.BytesDone;
+  }
+  if (!speed.rate) return "";
+  const left = Math.max(0, j.BytesTotal-j.BytesDone) / speed.rate;
+  return fmtBytes(speed.rate) + "/s · " + t("eta", { t: fmtDur(left) });
+}
+
+function renderJob(j) {
+  $("jobTitle").textContent = t(j.Kind === "apply" ? "jApply" : j.Kind === "verify" ? "jVerify" : "jCheck");
+  $("jobPhase").textContent = j.Cancel ? t("stopping") : t(PHASE_KEY[j.Phase] || "pStart");
+  const bar = $("jobBar");
+  const useBytes = (j.Phase === "download" || j.Phase === "verify") && j.BytesTotal > 0;
+  let pct = null;
+  if (useBytes) pct = Math.min(100, j.BytesDone * 100 / j.BytesTotal);
+  else if (j.Total > 1) pct = Math.min(100, j.Done * 100 / j.Total);
+  bar.classList.toggle("indet", pct === null);
+  bar.firstElementChild.style.width = pct === null ? "" : pct + "%";
+  $("jobCount").textContent = j.Total > 1 ? t("ofN", { a: fmt(j.Done), b: fmt(j.Total) }) : "";
+  const sp = useBytes ? speedText(j) : "";
+  $("jobBytes").textContent = useBytes ? fmtBytes(j.BytesDone) + " / " + fmtBytes(j.BytesTotal) + (sp ? " · " + sp : "") : "";
+  $("jobCur").textContent = j.Current || "";
+  const order = j.Kind === "apply" ? PHASES.apply : (PHASES[j.Kind] || []);
+  const idx = order.indexOf(j.Phase);
+  $("jobPhases").innerHTML = order.map((p, i) => `<span class="phase ${i === idx ? "on" : i < idx ? "done" : ""}">${esc(t(PHASE_KEY[p]))}</span>`).join("");
+  $("jobCancel").disabled = !!j.Cancel;
+}
+
+async function pollJob() {
+  if (state.polling) return;
+  state.polling = true;
+  showModal("jobModal");
+  if (state.st) { state.st.job = { Finished: false }; renderMain(); }
+  let j = null;
+  while (true) {
+    try { j = await api("/api/job"); } catch { j = null; }
+    if (!j) break;
+    renderJob(j);
+    if (j.Finished) break;
+    await new Promise(r => setTimeout(r, 350));
+  }
+  state.polling = false;
+  $("jobModal").classList.remove("show");
+  $("overlay").classList.remove("show");
+  if (j && j.ServerId) state.sel = j.ServerId;
+  try { await refresh(); } catch (e) { toast(e.message, true); }
+  if (!j) return;
+  if (j.ErrorCode) toast(tErr(j.ErrorCode, j.ErrorArg), j.ErrorCode === "cancelled" ? undefined : true);
+  else if (j.Kind === "apply") toast(j.Compared ? t("doneStats", { c: fmt(j.Compared), i: fmt(j.Identical), s: fmt(j.Saved), b: fmtBytes(j.SavedBytes) }) : t("doneStatsNone"), "ok");
+  else toast(t("doneCheck"), "ok");
+}
+$("jobCancel").onclick = () => api("/api/job/cancel", {}).catch(() => {});
+
+async function ping() {
+  try {
+    const r = await api("/api/ping");
+    if (r.gameRunning !== state.gameRunning) {
+      state.gameRunning = r.gameRunning;
+      if (state.st && !state.polling) { state.st.gameRunning = r.gameRunning; renderMain(); }
+    }
+    $("lost").classList.remove("show");
+    ping.failed = 0;
+    return r;
+  } catch {
+    if (state.polling) return null;
+    ping.failed = (ping.failed || 0) + 1;
+    if (ping.failed >= 2) $("lost").classList.add("show");
+    if (ping.failed >= 4) window.close();
+    return null;
+  }
+}
+
+(async () => {
+  const urlLang = new URLSearchParams(location.search).get("lang");
+  const first = await ping();
+  LANG = I18N[urlLang] ? urlLang : (first && I18N[first.lang] ? first.lang : "de");
+  applyStaticTexts();
+  setInterval(ping, 4000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) ping(); });
+  try {
+    await refresh();
+    if (state.st.job && !state.st.job.Finished) pollJob();
+  } catch (e) { toast(e.message, true); }
+})();
+</script>
+</body>
+</html>

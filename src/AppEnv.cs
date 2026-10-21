@@ -1,0 +1,288 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Web.Script.Serialization;
+using System.Xml;
+
+internal sealed class AppError : Exception
+{
+    public readonly string Code;
+    public readonly string Arg;
+
+    public AppError(string code, string arg) : base(code + (arg == null ? "" : ": " + arg))
+    {
+        Code = code;
+        Arg = arg;
+    }
+}
+
+internal static class AppEnv
+{
+    public static string DataDir;
+    public static string ModsRoot;
+    public static string MapsRoot;
+    public static string GameSettingsPath;
+    public static string GameInstallPath;
+
+    public static readonly JavaScriptSerializer Json = CreateSerializer();
+
+    private static JavaScriptSerializer CreateSerializer()
+    {
+        JavaScriptSerializer s = new JavaScriptSerializer();
+        s.MaxJsonLength = int.MaxValue;
+        s.RecursionLimit = 256;
+        return s;
+    }
+
+    public static string GameDocumentsDir
+    {
+        get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), @"My Games\FarmingSimulator2025"); }
+    }
+
+    public static void Init()
+    {
+        string exeDir = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\');
+        GameSettingsPath = Path.Combine(GameDocumentsDir, "gameSettings.xml");
+
+        string settingsDir = null;
+        foreach (string cand in new string[] { exeDir, Path.Combine(exeDir, "_Tools"), Path.GetDirectoryName(exeDir) })
+        {
+            if (!string.IsNullOrEmpty(cand) && File.Exists(Path.Combine(cand, "settings.json"))) { settingsDir = cand; break; }
+        }
+        if (settingsDir != null)
+        {
+            try
+            {
+                Dictionary<string, object> s = Json.DeserializeObject(File.ReadAllText(Path.Combine(settingsDir, "settings.json"))) as Dictionary<string, object>;
+                if (s != null)
+                {
+                    ModsRoot = GetString(s, "ModsRoot");
+                    MapsRoot = GetString(s, "MapsRoot");
+                    string gip = GetString(s, "GameInstallPath");
+                    if (!string.IsNullOrEmpty(gip) && Directory.Exists(gip)) GameInstallPath = gip;
+                    string gsp = GetString(s, "GameSettingsPath");
+                    if (!string.IsNullOrEmpty(gsp)) GameSettingsPath = gsp;
+                }
+            }
+            catch (Exception) { }
+            DataDir = settingsDir;
+        }
+        if (DataDir == null) DataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FS25 Server Sync");
+        Directory.CreateDirectory(DataDir);
+        if (string.IsNullOrEmpty(MapsRoot) && !string.IsNullOrEmpty(ModsRoot)) MapsRoot = Path.Combine(ModsRoot, "Karten");
+    }
+
+    public static string FindInstallPath()
+    {
+        if (!string.IsNullOrEmpty(GameInstallPath) && Directory.Exists(GameInstallPath)) return GameInstallPath;
+        try
+        {
+            string steam = ReadRegistry(@"SOFTWARE\WOW6432Node\Valve\Steam", "InstallPath") ?? ReadRegistry(@"SOFTWARE\Valve\Steam", "InstallPath");
+            if (!string.IsNullOrEmpty(steam))
+            {
+                string vdf = Path.Combine(steam, @"steamapps\libraryfolders.vdf");
+                if (File.Exists(vdf))
+                {
+                    foreach (Match m in Regex.Matches(File.ReadAllText(vdf), "\"path\"\\s*\"([^\"]+)\""))
+                    {
+                        string candidate = Path.Combine(m.Groups[1].Value.Replace(@"\\", @"\"), @"steamapps\common\Farming Simulator 25");
+                        if (Directory.Exists(candidate)) { GameInstallPath = candidate; return candidate; }
+                    }
+                }
+            }
+        }
+        catch (Exception) { }
+        foreach (string c in new string[] { @"C:\Program Files (x86)\Farming Simulator 25", @"C:\Program Files\Farming Simulator 25" })
+        {
+            if (Directory.Exists(c)) { GameInstallPath = c; return c; }
+        }
+        return null;
+    }
+
+    private static string ReadRegistry(string subKey, string name)
+    {
+        using (Microsoft.Win32.RegistryKey key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(subKey))
+        {
+            if (key == null) return null;
+            object v = key.GetValue(name);
+            return v == null ? null : v.ToString();
+        }
+    }
+
+    public static HashSet<string> InstalledDlcs()
+    {
+        HashSet<string> result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        List<string> dirs = new List<string>();
+        string install = FindInstallPath();
+        if (install != null) dirs.Add(Path.Combine(install, "pdlc"));
+        dirs.Add(Path.Combine(GameDocumentsDir, "pdlc"));
+        bool any = false;
+        foreach (string d in dirs)
+        {
+            if (!Directory.Exists(d)) continue;
+            any = true;
+            foreach (string f in Directory.GetFiles(d, "*.dlc")) result.Add(Path.GetFileName(f));
+            foreach (string f in Directory.GetDirectories(d)) if (f.EndsWith(".dlc", StringComparison.OrdinalIgnoreCase)) result.Add(Path.GetFileName(f));
+        }
+        return any ? result : null;
+    }
+
+    public static string DefaultLibrary()
+    {
+        if (!string.IsNullOrEmpty(ModsRoot) && Directory.Exists(ModsRoot)) return ModsRoot;
+        string mods = Path.Combine(GameDocumentsDir, "mods");
+        return Directory.Exists(mods) ? mods : null;
+    }
+
+    private static string Squash(string s)
+    {
+        return Regex.Replace(s ?? "", "[^0-9A-Za-zÄÖÜäöüß]", "").ToLowerInvariant();
+    }
+
+    private static string SafeName(string s)
+    {
+        return Regex.Replace(s ?? "", @"[\\/:*?""<>|]", "").Trim().TrimEnd('.');
+    }
+
+    public static string SuggestTarget(string serverName, string mapTitle)
+    {
+        string name = SafeName(serverName);
+        if (name.Length == 0) name = "Server";
+        string map = SafeName(mapTitle);
+        if (map.Length > 0 && Squash(name).IndexOf(Squash(map), StringComparison.Ordinal) < 0) name += "-" + map;
+        if (!string.IsNullOrEmpty(MapsRoot) && Directory.Exists(MapsRoot)) return Path.Combine(MapsRoot, name);
+        return Path.Combine(GameDocumentsDir, "mods_" + name);
+    }
+
+    public static string UiLanguage()
+    {
+        string lang = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+        return (lang == "de" || lang == "fr") ? lang : "en";
+    }
+
+    public static string GetString(Dictionary<string, object> d, string key)
+    {
+        object v;
+        if (d == null || !d.TryGetValue(key, out v) || v == null) return null;
+        return Convert.ToString(v, CultureInfo.InvariantCulture);
+    }
+
+    public static List<string> GetStrings(Dictionary<string, object> d, string key)
+    {
+        List<string> result = new List<string>();
+        object v;
+        if (d == null || !d.TryGetValue(key, out v) || v == null) return result;
+        System.Collections.IList list = v as System.Collections.IList;
+        if (list == null) { result.Add(Convert.ToString(v, CultureInfo.InvariantCulture)); return result; }
+        foreach (object o in list) if (o != null) result.Add(Convert.ToString(o, CultureInfo.InvariantCulture));
+        return result;
+    }
+
+    public static bool GetBool(Dictionary<string, object> d, string key)
+    {
+        object v;
+        if (d == null || !d.TryGetValue(key, out v) || v == null) return false;
+        if (v is bool) return (bool)v;
+        return string.Equals(Convert.ToString(v, CultureInfo.InvariantCulture), "true", StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static void Log(string action, string details)
+    {
+        string line = "[" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) + "] " + action;
+        if (!string.IsNullOrEmpty(details)) line += ": " + details;
+        try { File.AppendAllText(Path.Combine(DataDir, "serversync.log"), line + Environment.NewLine, new UTF8Encoding(true)); }
+        catch (Exception) { }
+    }
+
+    public static bool GameRunning()
+    {
+        bool running = false;
+        foreach (Process p in Process.GetProcesses())
+        {
+            try { if (p.ProcessName.IndexOf("FarmingSimulator", StringComparison.OrdinalIgnoreCase) >= 0) running = true; }
+            catch (Exception) { }
+            finally { p.Dispose(); }
+        }
+        return running;
+    }
+
+    public static string Fingerprint(string path)
+    {
+        if (!File.Exists(path)) return "";
+        FileInfo fi = new FileInfo(path);
+        return fi.Length.ToString(CultureInfo.InvariantCulture) + "_" + fi.LastWriteTimeUtc.Ticks.ToString(CultureInfo.InvariantCulture);
+    }
+
+    public static string NormalizeDir(string path)
+    {
+        if (string.IsNullOrEmpty(path)) return null;
+        return Path.GetFullPath(path.Trim().Trim('"')).TrimEnd('\\');
+    }
+
+    public static bool SamePath(string a, string b)
+    {
+        if (a == null || b == null) return false;
+        return string.Equals(NormalizeDir(a), NormalizeDir(b), StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static bool IsInside(string path, string folder)
+    {
+        if (path == null || folder == null) return false;
+        string p = NormalizeDir(path) + "\\";
+        string f = NormalizeDir(folder) + "\\";
+        return p.StartsWith(f, StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static string ActiveModsDirectoryOverride()
+    {
+        if (!File.Exists(GameSettingsPath)) return null;
+        try
+        {
+            XmlDocument doc = new XmlDocument();
+            doc.Load(GameSettingsPath);
+            XmlElement node = doc.SelectSingleNode("//modsDirectoryOverride") as XmlElement;
+            if (node == null || !string.Equals(node.GetAttribute("active"), "true", StringComparison.OrdinalIgnoreCase)) return null;
+            string dir = node.GetAttribute("directory");
+            return string.IsNullOrEmpty(dir) ? null : dir;
+        }
+        catch (Exception) { return null; }
+    }
+
+    public static void SetModsDirectoryOverride(string directory)
+    {
+        if (!File.Exists(GameSettingsPath)) throw new AppError("noGameSettings", GameSettingsPath);
+        if (GameRunning()) throw new AppError("gameRunning", null);
+        XmlDocument doc = new XmlDocument();
+        doc.PreserveWhitespace = true;
+        doc.Load(GameSettingsPath);
+        XmlElement node = doc.SelectSingleNode("//modsDirectoryOverride") as XmlElement;
+        if (node == null)
+        {
+            node = doc.CreateElement("modsDirectoryOverride");
+            doc.DocumentElement.AppendChild(node);
+        }
+        if (string.IsNullOrEmpty(directory))
+        {
+            node.SetAttribute("active", "false");
+        }
+        else
+        {
+            node.SetAttribute("active", "true");
+            node.SetAttribute("directory", directory);
+        }
+        string backupDir = Path.Combine(Path.GetDirectoryName(GameSettingsPath), "_ServerSyncBackups");
+        Directory.CreateDirectory(backupDir);
+        File.Copy(GameSettingsPath, Path.Combine(backupDir, "gameSettings.xml." + DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss", CultureInfo.InvariantCulture) + ".bak"), true);
+        XmlWriterSettings ws = new XmlWriterSettings();
+        ws.Encoding = new UTF8Encoding(false);
+        using (XmlWriter w = XmlWriter.Create(GameSettingsPath, ws))
+        {
+            doc.Save(w);
+        }
+        Log("Aktiviert", string.IsNullOrEmpty(directory) ? "(Standard-Mods-Ordner)" : directory);
+    }
+}
