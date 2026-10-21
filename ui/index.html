@@ -307,6 +307,11 @@ button, input { font: inherit; color: inherit; }
       <div class="v" id="activePath"></div>
       <div class="acts" id="activeActs"></div>
     </div>
+    <div class="foot-box">
+      <div class="k" data-i18n="settings"></div>
+      <div class="v" id="dataPath"></div>
+      <div class="acts"><button class="btn small ghost" id="dataOpen" data-i18n="open"></button></div>
+    </div>
   </div>
 </aside>
 
@@ -437,6 +442,7 @@ const I18N = {
     e_noGameSettings: "gameSettings.xml nicht gefunden: {a}", e_serverUnknown: "Server nicht gefunden.", e_busy: "Es läuft gerade schon ein Vorgang.", e_nameEmpty: "Bitte einen Namen eintragen.",
     e_targetUsed: "Dieser Zielordner gehört schon zu \"{a}\".", e_noPlan: "Bitte zuerst prüfen.", e_notSynced: "Bitte zuerst abgleichen.", e_folderMissing: "Ordner nicht gefunden.",
     e_unexpected: "Unerwarteter Fehler: {a}", errorN: "Fehler {n}",
+    settings: "Einstellungen", remUnlink1: "1 Verknüpfung wird entfernt, die Datei bleibt in deiner Bibliothek", remUnlinkN: "{n} Verknüpfungen werden entfernt, die Dateien bleiben in deiner Bibliothek", remArch1: "1 Datei kommt ins Archiv (_ServerDownloads\\_Archiv)", remArchN: "{n} Dateien kommen ins Archiv (_ServerDownloads\\_Archiv)",
     dlcPill: "DLCs: {a} von {b} vorhanden", dlcPillUnknown: "Server nutzt {b} DLCs", alertDlcMissing: "Dir fehlen DLCs, die der Server nutzt: {x}", alertDlcMissingText: "Ohne sie kannst du dem Server nicht beitreten. DLCs kann das Tool nicht herunterladen, sie müssen gekauft und installiert sein. Danach erneut prüfen.", alertDlcUnknown: "Der Server nutzt diese DLCs: {x}", alertDlcUnknownText: "Deine Spielinstallation wurde nicht gefunden, deshalb kann das Tool nicht prüfen, ob du sie hast. Ohne sie ist kein Beitritt möglich.", h1Dlc: "Installiere zuerst die fehlenden DLCs, danach erneut prüfen.",
     gInactive: "Auf dem Server inaktiv", gInactiveDesc: "Nur für Admins sichtbar. Diese Mods liegen auf dem Server, sind dort aber ausgeschaltet und belegen zusammen {size}. Wenn sie nicht mehr gebraucht werden, kannst du sie im Webinterface löschen. Das Tool ändert am Server nichts und lädt sie nicht herunter.", adminPill: "Admin-Rechte",
     runPill: "Läuft: {m}", runPillSlot: "Läuft: {m} ({s})", gSkip: "Andere Karten, laufen nicht", gSkipDesc: "Diese Karten sind auf dem Server eingeschaltet, laufen aber gerade nicht. Sie werden nicht übernommen. Liegen sie schon im Zielordner, werden sie herausgenommen.", alertRunUnknown: "Laufende Karte {m} keiner Karten-Mod eindeutig zugeordnet", alertRunUnknownText: "Vermutlich eine Karte aus dem Grundspiel. Zur Sicherheit werden alle eingeschalteten Karten-Mods übernommen.",
@@ -505,6 +511,7 @@ const I18N = {
     e_noGameSettings: "gameSettings.xml not found: {a}", e_serverUnknown: "Server not found.", e_busy: "Another operation is already running.", e_nameEmpty: "Please enter a name.",
     e_targetUsed: "This target folder already belongs to \"{a}\".", e_noPlan: "Please check first.", e_notSynced: "Please sync first.", e_folderMissing: "Folder not found.",
     e_unexpected: "Unexpected error: {a}", errorN: "Error {n}",
+    settings: "Settings", remUnlink1: "1 link is removed, the file stays in your library", remUnlinkN: "{n} links are removed, the files stay in your library", remArch1: "1 file is moved to the archive (_ServerDownloads\\_Archiv)", remArchN: "{n} files are moved to the archive (_ServerDownloads\\_Archiv)",
     dlcPill: "DLCs: {a} of {b} installed", dlcPillUnknown: "Server uses {b} DLCs", alertDlcMissing: "You are missing DLCs the server uses: {x}", alertDlcMissingText: "You cannot join the server without them. The tool cannot download DLCs, they have to be bought and installed. Check again afterwards.", alertDlcUnknown: "The server uses these DLCs: {x}", alertDlcUnknownText: "Your game installation was not found, so the tool cannot check whether you own them. Joining is not possible without them.", h1Dlc: "Install the missing DLCs first, then check again.",
     gInactive: "Inactive on the server", gInactiveDesc: "Only visible to admins. These mods are on the server but switched off there, together they take up {size}. If they are no longer needed, you can delete them in the web interface. The tool changes nothing on the server and does not download them.", adminPill: "Admin rights",
     runPill: "Running: {m}", runPillSlot: "Running: {m} ({s})", gSkip: "Other maps, not running", gSkipDesc: "These maps are enabled on the server but not running right now. They are not taken over. If they are already in the target folder, they are taken out.", alertRunUnknown: "Running map {m} could not be matched to exactly one map mod", alertRunUnknownText: "Probably a base game map. To be safe, all enabled map mods are taken over.",
@@ -573,6 +580,7 @@ const I18N = {
     e_noGameSettings: "gameSettings.xml introuvable : {a}", e_serverUnknown: "Serveur introuvable.", e_busy: "Une opération est déjà en cours.", e_nameEmpty: "Veuillez saisir un nom.",
     e_targetUsed: "Ce dossier cible appartient déjà à \"{a}\".", e_noPlan: "Veuillez d'abord vérifier.", e_notSynced: "Veuillez d'abord synchroniser.", e_folderMissing: "Dossier introuvable.",
     e_unexpected: "Erreur inattendue : {a}", errorN: "Erreur {n}",
+    settings: "Paramètres", remUnlink1: "1 lien est retiré, le fichier reste dans votre bibliothèque", remUnlinkN: "{n} liens sont retirés, les fichiers restent dans votre bibliothèque", remArch1: "1 fichier est déplacé vers l'archive (_ServerDownloads\\_Archiv)", remArchN: "{n} fichiers sont déplacés vers l'archive (_ServerDownloads\\_Archiv)",
     dlcPill: "DLC : {a} sur {b} installés", dlcPillUnknown: "Le serveur utilise {b} DLC", alertDlcMissing: "Il vous manque des DLC utilisés par le serveur : {x}", alertDlcMissingText: "Sans eux, impossible de rejoindre le serveur. L'outil ne peut pas télécharger de DLC, ils doivent être achetés et installés. Vérifiez à nouveau ensuite.", alertDlcUnknown: "Le serveur utilise ces DLC : {x}", alertDlcUnknownText: "Votre installation du jeu est introuvable, l'outil ne peut donc pas vérifier si vous les possédez. Impossible de rejoindre sans eux.", h1Dlc: "Installez d'abord les DLC manquants, puis vérifiez à nouveau.",
     gInactive: "Inactifs sur le serveur", gInactiveDesc: "Visible uniquement pour les admins. Ces mods sont sur le serveur mais désactivés, ils occupent ensemble {size}. S'ils ne sont plus nécessaires, vous pouvez les supprimer dans l'interface web. L'outil ne modifie rien sur le serveur et ne les télécharge pas.", adminPill: "Droits admin",
     runPill: "En cours : {m}", runPillSlot: "En cours : {m} ({s})", gSkip: "Autres cartes, pas en cours", gSkipDesc: "Ces cartes sont activées sur le serveur mais ne tournent pas actuellement. Elles ne sont pas reprises. Si elles sont déjà dans le dossier cible, elles en sont retirées.", alertRunUnknown: "La carte en cours {m} ne correspond pas à un seul mod de carte", alertRunUnknownText: "Probablement une carte du jeu de base. Par sécurité, tous les mods de carte activés sont repris.",
@@ -681,6 +689,7 @@ function renderRail() {
   const lib = $("libPath");
   lib.textContent = st.library || t("notSet");
   lib.classList.toggle("missing", !st.libraryExists);
+  $("dataPath").textContent = st.dataDir || "";
   $("libOpen").disabled = !st.libraryExists;
   $("activePath").textContent = st.activeOverride || t("defaultFolder");
   $("activeActs").innerHTML = st.canRestore ? `<button class="btn small" id="restoreBtn">${esc(t("restorePrev"))}</button>` : "";
@@ -1014,6 +1023,7 @@ function openLibModal() {
 }
 $("libChange").onclick = openLibModal;
 $("libOpen").onclick = () => api("/api/open", { path: state.st.library }).catch(e => toast(e.message, true));
+$("dataOpen").onclick = () => api("/api/open", { path: state.st.dataDir }).catch(e => toast(e.message, true));
 $("fLibPick").onclick = async () => {
   try {
     const r = await api("/api/pick", { title: t("library"), start: $("fLib").value.trim() });
@@ -1039,7 +1049,10 @@ function openApplyModal() {
   if (c.update) body += line("var(--s-update)", t("sUpdate"), fmtBytes(sumBytes("update")), fmt(c.update));
   if (c.check) body += line("var(--s-check)", t("sCheck"), fmtBytes(sumBytes("check")), fmt(c.check));
   if (c.link) body += line("var(--s-link)", p.SameVolume ? t("sLink") : t("sCopy"), "", fmt(c.link));
-  if (c.remove) body += line("var(--s-remove)", t("sRemove"), t("sRemoveSub", { a: fmt(unlink), b: fmt(archive) }), fmt(c.remove));
+  const remParts = [];
+  if (unlink) remParts.push(unlink === 1 ? t("remUnlink1") : t("remUnlinkN", { n: fmt(unlink) }));
+  if (archive) remParts.push(archive === 1 ? t("remArch1") : t("remArchN", { n: fmt(archive) }));
+  if (c.remove) body += line("var(--s-remove)", t("sRemove"), remParts.join(". "), fmt(c.remove));
   if (!c.download && !c.update && !c.check && !c.link && !c.remove) body += `<p>${esc(t("nothingToDo"))}</p>`;
   body += `</div>`;
   if (c.check) {

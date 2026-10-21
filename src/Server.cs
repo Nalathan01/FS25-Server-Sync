@@ -360,6 +360,7 @@ internal sealed class SyncServer
         r["lang"] = uiLang;
         r["gameRunning"] = AppEnv.GameRunning();
         r["library"] = cfg.Library;
+        r["dataDir"] = AppEnv.DataDir;
         r["libraryExists"] = !string.IsNullOrEmpty(cfg.Library) && Directory.Exists(cfg.Library);
         r["store"] = string.IsNullOrEmpty(cfg.Library) ? null : Sync.StoreDir(cfg.Library);
         r["activeOverride"] = active;
@@ -595,7 +596,7 @@ internal sealed class SyncServer
     private void OpenFolder(string path)
     {
         string dir = AppEnv.NormalizeDir(path);
-        bool allowed = AppEnv.SamePath(dir, cfg.Library) || (cfg.Library != null && AppEnv.SamePath(dir, Sync.StoreDir(cfg.Library))) || cfg.Servers.Any(s => AppEnv.SamePath(dir, s.Target));
+        bool allowed = AppEnv.SamePath(dir, AppEnv.DataDir) || AppEnv.SamePath(dir, cfg.Library) || (cfg.Library != null && AppEnv.SamePath(dir, Sync.StoreDir(cfg.Library))) || cfg.Servers.Any(s => AppEnv.SamePath(dir, s.Target));
         if (!allowed || !Directory.Exists(dir)) throw new AppError("folderMissing", path);
         Process.Start("explorer.exe", "\"" + dir + "\"");
     }
