@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 internal static class Updater
 {
     private const string Repo = "Nalathan01/FS25-Server-Sync";
-    private const string AssetName = "FS25 Server Sync.exe";
+    private const string AssetName = "FS25.Server.Sync.exe";
     private const string Agent = "FS25ServerSync";
 
     private static string latest;
