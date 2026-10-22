@@ -87,17 +87,6 @@ Fragen, Ideen oder ein Server, bei dem etwas nicht klappt? Eröffne ein [Issue](
 * Website: https://www.nalathan.de/
 * YouTube: https://www.youtube.com/@nalathangaming
 
-## Code-Signatur
-
-Kostenlose Code-Signatur durch [SignPath.io](https://about.signpath.io/), Zertifikat von der [SignPath Foundation](https://signpath.org/).
-
-* Committer und Prüfer: [Nalathan01](https://github.com/Nalathan01)
-* Freigabe: [Nalathan01](https://github.com/Nalathan01)
-
-Signiert werden nur Builds, die GitHub Actions automatisch aus dem Quellcode in diesem Repository erstellt.
-
-Datenschutz: Dieses Programm verbindet sich nur mit den Servern, die du selbst einträgst, und mit GitHub, um nach Updates zu schauen. Andere Informationen schickt es nirgendwohin.
-
 ## Lizenz
 
 MIT, siehe [LICENSE](LICENSE).
