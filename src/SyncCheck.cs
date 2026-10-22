@@ -14,7 +14,6 @@ internal static partial class Sync
         ValidateFolders(library, server.Target);
         string baseUrl = ServerPage.BaseUrl(server.Url);
         string target = AppEnv.NormalizeDir(server.Target);
-        string store = StoreDir(library);
 
         job.Step("fetch", 1);
         bool canManage;
@@ -57,8 +56,8 @@ internal static partial class Sync
         }
 
         job.Step("scan", 1);
-        Dictionary<string, List<LocalFile>> index = IndexLibrary(library, cfg.Servers.Select(s => s.Target));
-        ClearTemp(store);
+        Dictionary<string, List<LocalFile>> index = IndexLibrary(cfg, library, target);
+        ClearTemp();
 
         if (refreshHashes)
         {
@@ -161,9 +160,9 @@ internal static partial class Sync
         return x.Length > 0 && x == y;
     }
 
-    private static void ClearTemp(string store)
+    private static void ClearTemp()
     {
-        string tmpDir = Path.Combine(store, ".tmp");
+        string tmpDir = TempDir;
         if (!Directory.Exists(tmpDir)) return;
         foreach (string f in Directory.GetFiles(tmpDir))
         {
@@ -273,14 +272,14 @@ internal static partial class Sync
             row.Title = row.ModName;
             if (isDir)
             {
-                row.RemoveMode = NativeLinks.IsReparsePoint(entry) ? "unlink" : "archive";
+                row.RemoveMode = NativeLinks.IsReparsePoint(entry) ? "unlink" : "delete";
             }
             else
             {
                 row.Version = ReadZip(entry).Version;
                 row.IconPath = entry;
                 row.Bytes = SizeOf(entry);
-                row.RemoveMode = NativeLinks.LinkCount(entry) > 1 ? "unlink" : IsToolFile(cfg, entry) ? "delete" : "archive";
+                row.RemoveMode = NativeLinks.LinkCount(entry) > 1 ? "unlink" : "delete";
             }
             plan.Rows.Add(row);
         }

@@ -24,9 +24,9 @@ Deutsche Version: [README.de.md](README.de.md)
 * **DLC check:** if the server uses a DLC you don't have, you are told before you try to join.
 * **Web interface login:** for servers whose mods page needs a login. The password is stored encrypted for your Windows account.
 * **For admins:** with mod rights, mods that are switched off on the server are listed as a cleanup suggestion. The tool never changes anything on the server.
-* **Your own files are safe:** files downloaded from the server are removed once the server no longer uses them. Your own files that were in a target folder before are moved to an archive, which you can empty yourself.
+* **Tidy server folders:** downloads go straight into the server folder, and whatever the server no longer uses is removed from it. Your mod library is never touched.
 * **Share a server with your friends:** export a server entry to a small file and pass it on. Your friends drag it into the window and everything is filled in. No login, no folders, no passwords are shared.
-* **Settings in one place:** mod library, language, archive and how much disk space each server folder really takes up.
+* **Settings in one place:** mod library, language and how much disk space each server folder really takes up.
 * **Switch the active mods folder** right from the tool: back to the game's default folder, to any server folder or to a folder of your choice.
 * **Re-check single mods:** if the game still shows a red warning triangle for a mod, tick it in the list and only that mod is checked again.
 * **Notices changes:** if something changes in a server folder while the tool is open, it checks again on its own.
@@ -67,8 +67,8 @@ The exe is written to `dist\FS25 Server Sync.exe`.
 ## Good to know
 
 * Hardlinks only work on one drive. If the server folder is on a different drive than your mod library, the mods are copied instead and take up extra space.
-* Linked mods show up with their full size in Explorer, in both folders. They still take up the space only once. The settings window shows how much each server folder really uses.
-* New downloads go into the subfolder `_ServerDownloads` of your mod library, archived files into `_ServerDownloads\_Archiv`.
+* Added mods show up with their full size in Explorer, in both folders. They still take up the space only once. The settings window shows how much each server folder really uses.
+* New downloads go straight into the server folder. If two servers use the same mod, their folders share it and it is stored only once.
 * Mods the server offers no download for have to be added to your library by hand.
 * Without the LS25 Mod Manager, the tool suggests your normal mods folder as library and stores its settings in `%LOCALAPPDATA%\FS25 Server Sync`. With the LS25 Mod Manager they are kept in the subfolder `FS25 Server Sync` next to the exe.
 * As a new and unsigned program, Windows SmartScreen and a few AI based virus scanners may warn about it.

@@ -14,10 +14,8 @@ internal static partial class Sync
         if (!AppEnv.SamePath(plan.Target, server.Target) || !AppEnv.SamePath(plan.Library, cfg.Library)) throw new AppError("planOutdated", null);
         string target = plan.Target;
         if (AppEnv.GameRunning() && AppEnv.SamePath(AppEnv.ActiveModsDirectoryOverride(), target)) throw new AppError("gameRunningActive", null);
-        string store = StoreDir(plan.Library);
         Directory.CreateDirectory(target);
         bool sameVolume = NativeLinks.SameVolume(plan.Library, target);
-        string archive = Path.Combine(store, "_Archiv", DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss", CultureInfo.InvariantCulture));
 
         List<PlanRow> removes = plan.Rows.Where(r => r.Status == "remove").ToList();
         job.Step("remove", removes.Count);
@@ -25,7 +23,7 @@ internal static partial class Sync
         {
             job.ThrowIfCancelled();
             job.Current = r.Title;
-            Retire(cfg, r.TargetPath, archive);
+            Retire(cfg, r.TargetPath);
             job.Done++;
         }
 
@@ -35,7 +33,7 @@ internal static partial class Sync
         job.Step("download", downloads.Count);
         job.BytesDone = 0;
         job.BytesTotal = downloads.Sum(r => Math.Max(0, r.Bytes));
-        string tmpDir = Path.Combine(store, ".tmp");
+        string tmpDir = TempDir;
         Directory.CreateDirectory(tmpDir);
         System.Threading.Tasks.ParallelOptions po = new System.Threading.Tasks.ParallelOptions();
         po.MaxDegreeOfParallelism = 3;
@@ -68,7 +66,7 @@ internal static partial class Sync
         job.ThrowIfCancelled();
         if (firstError != null) throw firstError;
 
-        Dictionary<string, List<LocalFile>> index = IndexLibrary(plan.Library, cfg.Servers.Select(s => s.Target));
+        Dictionary<string, List<LocalFile>> index = IndexLibrary(cfg, plan.Library, target);
         List<PlanRow> places = plan.Rows.Where(r => (r.Status == "link" && r.Source != null) || fetched.ContainsKey(r)).ToList();
         job.Step("link", places.Count);
         foreach (PlanRow r in places)
@@ -78,7 +76,7 @@ internal static partial class Sync
             string t = Path.Combine(target, r.FileName);
             if (r.Status == "link")
             {
-                LinkInto(cfg, r.Source, t, archive, sameVolume);
+                LinkInto(cfg, r.Source, t, sameVolume);
                 job.Done++;
                 continue;
             }
@@ -86,7 +84,7 @@ internal static partial class Sync
             string h = fetchedHash[r];
             if (file == null)
             {
-                if (!AppEnv.SamePath(r.CompareWith, t)) LinkInto(cfg, r.CompareWith, t, archive, sameVolume);
+                if (!AppEnv.SamePath(r.CompareWith, t)) LinkInto(cfg, r.CompareWith, t, sameVolume);
                 job.Identical++;
                 job.Done++;
                 continue;
@@ -104,24 +102,16 @@ internal static partial class Sync
             if (same != null)
             {
                 File.Delete(file);
-                LinkInto(cfg, same.Path, t, archive, sameVolume);
+                LinkInto(cfg, same.Path, t, sameVolume);
                 job.Identical++;
             }
             else
             {
                 job.Saved++;
                 job.SavedBytes += Math.Max(0, r.Bytes);
-                string placed = cands.Count == 0 ? PlaceInStore(store, r.FileName, file) : null;
-                if (placed != null)
-                {
-                    LinkInto(cfg, placed, t, archive, sameVolume);
-                }
-                else
-                {
-                    Retire(cfg, t, archive);
-                    File.Move(file, t);
-                    MarkPlaced(cfg, t);
-                }
+                Retire(cfg, t);
+                File.Move(file, t);
+                MarkPlaced(cfg, t);
             }
             job.Done++;
         }
@@ -134,12 +124,13 @@ internal static partial class Sync
         File.WriteAllText(Path.Combine(target, MarkerName), AppEnv.Json.Serialize(marker), new UTF8Encoding(false));
         try { File.Delete(Path.Combine(target, LegacyMarkerName)); } catch (Exception) { }
         AppEnv.Log("Abgeglichen", server.Name + " nach " + target + " (" + Summary(plan) + ")");
+        RetireStore(plan.Library);
     }
 
-    private static void LinkInto(Config cfg, string source, string t, string archive, bool sameVolume)
+    private static void LinkInto(Config cfg, string source, string t, bool sameVolume)
     {
         if (File.Exists(t) && NativeLinks.SameFile(t, source)) return;
-        Retire(cfg, t, archive);
+        Retire(cfg, t);
         if (sameVolume) NativeLinks.CreateHardLink(t, source);
         else
         {
@@ -148,28 +139,17 @@ internal static partial class Sync
         }
     }
 
-    private static void Retire(Config cfg, string path, string archive)
+    private static void Retire(Config cfg, string path)
     {
-        string name = Path.GetFileName(path);
         if (Directory.Exists(path))
         {
-            if (NativeLinks.IsReparsePoint(path)) { Directory.Delete(path, false); return; }
-            Directory.CreateDirectory(archive);
-            Directory.Move(path, Path.Combine(archive, name));
-            AppEnv.Log("Archiviert", path + " nach " + archive);
+            Directory.Delete(path, !NativeLinks.IsReparsePoint(path));
+            AppEnv.Log("Entfernt", path);
             return;
         }
         if (!File.Exists(path)) return;
-        if (NativeLinks.LinkCount(path) > 1) { File.Delete(path); UnmarkPlaced(cfg, path); return; }
-        if (IsToolFile(cfg, path))
-        {
-            File.Delete(path);
-            UnmarkPlaced(cfg, path);
-            AppEnv.Log("Geloescht", path + " (vom Server geladen, nicht mehr benoetigt)");
-            return;
-        }
-        Directory.CreateDirectory(archive);
-        File.Move(path, Path.Combine(archive, name));
-        AppEnv.Log("Archiviert", path + " nach " + archive);
+        File.Delete(path);
+        UnmarkPlaced(cfg, path);
+        AppEnv.Log("Entfernt", path);
     }
 }

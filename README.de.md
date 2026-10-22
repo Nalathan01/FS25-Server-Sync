@@ -24,9 +24,9 @@ English version: [README.md](README.md)
 * **DLC-Prüfung:** Nutzt der Server ein DLC, das dir fehlt, erfährst du es vor dem Beitreten.
 * **Login für das Webinterface:** für Server, deren Mods-Seite eine Anmeldung verlangt. Das Passwort wird verschlüsselt für dein Windows-Konto gespeichert.
 * **Für Admins:** Mit Mod-Rechten werden auf dem Server ausgeschaltete Mods als Aufräum-Vorschlag angezeigt. Am Server ändert das Tool nie etwas.
-* **Deine eigenen Dateien sind sicher:** Vom Server geladene Dateien werden entfernt, sobald der Server sie nicht mehr nutzt. Eigene Dateien, die vorher in einem Zielordner lagen, kommen in ein Archiv, das du selbst leeren kannst.
+* **Aufgeräumte Server-Ordner:** Downloads landen direkt im Server-Ordner, und was der Server nicht mehr nutzt, wird daraus entfernt. Deine Mod-Bibliothek wird nie angefasst.
 * **Server mit Mitspielern teilen:** Einen Server-Eintrag als kleine Datei exportieren und weitergeben. Deine Mitspieler ziehen sie ins Fenster, und alles ist ausgefüllt. Login, Ordner und Passwörter werden nicht geteilt.
-* **Einstellungen an einem Ort:** Mod-Bibliothek, Sprache, Archiv und wie viel Platz jeder Server-Ordner wirklich belegt.
+* **Einstellungen an einem Ort:** Mod-Bibliothek, Sprache und wie viel Platz jeder Server-Ordner wirklich belegt.
 * **Aktiven Mods-Ordner direkt umstellen:** zurück auf den Standard-Ordner des Spiels, auf einen Server-Ordner oder auf einen Ordner deiner Wahl.
 * **Merkt Änderungen:** Ändert sich bei offenem Tool etwas in einem Server-Ordner, prüft es von selbst neu.
 * **Updates mit einem Klick:** Gibt es eine neue Version, zeigt das Tool sie an und aktualisiert sich nach einem Klick selbst. Server und Einstellungen bleiben erhalten.
@@ -67,8 +67,8 @@ Die exe landet in `dist\FS25 Server Sync.exe`.
 ## Gut zu wissen
 
 * Hardlinks funktionieren nur auf einem Laufwerk. Liegt der Server-Ordner auf einem anderen Laufwerk als deine Mod-Bibliothek, werden die Mods stattdessen kopiert und belegen zusätzlich Platz.
-* Verlinkte Mods zeigt der Explorer in beiden Ordnern mit voller Größe an. Sie belegen den Platz trotzdem nur einmal. Im Einstellungsfenster siehst du, wie viel jeder Server-Ordner wirklich belegt.
-* Neue Downloads landen im Unterordner `_ServerDownloads` deiner Mod-Bibliothek, archivierte Dateien in `_ServerDownloads\_Archiv`.
+* Eingebundene Mods zeigt der Explorer in beiden Ordnern mit voller Größe an. Sie belegen den Platz trotzdem nur einmal. Im Einstellungsfenster siehst du, wie viel jeder Server-Ordner wirklich belegt.
+* Neue Downloads landen direkt im Server-Ordner. Nutzen zwei Server dieselbe Mod, teilen sich ihre Ordner die Datei, gespeichert wird sie nur einmal.
 * Mods, für die der Server keinen Download anbietet, musst du selbst in deine Bibliothek legen.
 * Ohne den LS25 Mod Manager schlägt das Tool deinen normalen Mods-Ordner als Bibliothek vor und speichert seine Einstellungen in `%LOCALAPPDATA%\FS25 Server Sync`. Mit dem LS25 Mod Manager liegen sie im Unterordner `FS25 Server Sync` neben der exe.
 * Als neues, unsigniertes Programm können Windows SmartScreen und einzelne KI-basierte Virenscanner warnen.

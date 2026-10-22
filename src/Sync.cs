@@ -200,11 +200,11 @@ internal static partial class Sync
         return ReadZip(f.Path).Version;
     }
 
-    public static Dictionary<string, List<LocalFile>> IndexLibrary(string library, IEnumerable<string> exclude)
+    public static Dictionary<string, List<LocalFile>> IndexLibrary(Config cfg, string library, string target)
     {
         Dictionary<string, List<LocalFile>> index = new Dictionary<string, List<LocalFile>>(StringComparer.OrdinalIgnoreCase);
         if (string.IsNullOrEmpty(library) || !Directory.Exists(library)) throw new AppError("libraryMissing", library);
-        List<string> excluded = exclude.Where(e => !string.IsNullOrEmpty(e)).ToList();
+        List<string> excluded = cfg.Servers.Select(s => s.Target).Where(e => !string.IsNullOrEmpty(e)).ToList();
         string store = StoreDir(library);
         List<string> roots = new List<string>();
         roots.Add(library);
@@ -224,6 +224,11 @@ internal static partial class Sync
         if (Directory.Exists(store))
         {
             foreach (string f in Directory.EnumerateFiles(store, "*.zip", SearchOption.TopDirectoryOnly)) Add(index, Path.GetFileNameWithoutExtension(f), f, true);
+        }
+        foreach (string other in excluded)
+        {
+            if (AppEnv.SamePath(other, target) || !Directory.Exists(other) || !NativeLinks.SameVolume(other, target)) continue;
+            foreach (string f in Directory.EnumerateFiles(other, "*.zip", SearchOption.TopDirectoryOnly)) Add(index, Path.GetFileNameWithoutExtension(f), f, true);
         }
         return index;
     }
@@ -312,9 +317,21 @@ internal static partial class Sync
         catch (Exception) { return false; }
     }
 
-    public static string ArchiveDir(string library)
+    public static string TempDir
     {
-        return Path.Combine(StoreDir(library), "_Archiv");
+        get { return Path.Combine(AppEnv.DataDir, "tmp"); }
+    }
+
+    public static void RetireStore(string library)
+    {
+        string store = StoreDir(library);
+        if (string.IsNullOrEmpty(library) || !Directory.Exists(store)) return;
+        try
+        {
+            Directory.Delete(store, true);
+            AppEnv.Log("Ablage", store + " aufgeloest");
+        }
+        catch (Exception ex) { AppEnv.Log("Ablage", store + ": " + ex.Message); }
     }
 
     public static string TargetStamp(string target)
@@ -335,12 +352,4 @@ internal static partial class Sync
         catch (Exception) { return ""; }
     }
 
-    public static string PlaceInStore(string store, string fileName, string file)
-    {
-        Directory.CreateDirectory(store);
-        string dest = Path.Combine(store, fileName);
-        if (File.Exists(dest)) return null;
-        File.Move(file, dest);
-        return dest;
-    }
 }
