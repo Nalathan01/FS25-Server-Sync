@@ -15,6 +15,7 @@ internal sealed class SyncServer
     private readonly string token = Guid.NewGuid().ToString("N");
     private readonly string uiLang = AppEnv.UiLanguage();
     private readonly Dictionary<string, Plan> plans = new Dictionary<string, Plan>();
+    private readonly Dictionary<string, string> stamps = new Dictionary<string, string>();
     private Config cfg;
     private Job job;
     private byte[] html;
@@ -23,11 +24,14 @@ internal sealed class SyncServer
     private bool running = true;
     private Process window;
     private DateTime windowStart;
+    private bool restart;
 
     public void Run(int port, bool noBrowser, string urlFile)
     {
         cfg = Config.Load();
         html = ReadResource("index.html");
+        Updater.CleanUp();
+        Updater.CheckInBackground();
         if (port == 0) port = FreePort();
         string prefix = "http://127.0.0.1:" + port.ToString(CultureInfo.InvariantCulture) + "/";
         HttpListener listener = new HttpListener();
@@ -63,6 +67,7 @@ internal sealed class SyncServer
         listener.Close();
         try { cfg.Save(); } catch (Exception) { }
         AppEnv.Log("ServerSync", "Beendet");
+        if (restart) Process.Start(Assembly.GetExecutingAssembly().Location, noBrowser ? "-NoBrowser" + (string.IsNullOrEmpty(urlFile) ? "" : " -UrlFile \"" + urlFile + "\"") : "");
     }
 
     private static int FreePort()
@@ -132,6 +137,9 @@ internal sealed class SyncServer
                 Dictionary<string, object> r = Obj("ok", true);
                 r["gameRunning"] = AppEnv.GameRunning();
                 r["lang"] = Lang();
+                r["stale"] = StaleIds();
+                r["update"] = Updater.Available;
+                r["version"] = Updater.CurrentText;
                 SendJson(ctx, 200, r);
             }
             else if (path == "/api/state") SendJson(ctx, 200, State());
@@ -310,6 +318,14 @@ internal sealed class SyncServer
                 try { Process.Start("steam://rungameid/2300320"); }
                 catch (Exception ex) { throw new AppError("launchFailed", ex.Message); }
                 SendJson(ctx, 200, Obj("ok", true));
+            }
+            else if (path == "/api/update")
+            {
+                EnsureIdle();
+                Updater.Install();
+                SendJson(ctx, 200, Obj("ok", true));
+                restart = true;
+                running = false;
             }
             else if (path == "/api/quit")
             {
@@ -502,6 +518,22 @@ internal sealed class SyncServer
         return s;
     }
 
+    private List<string> StaleIds()
+    {
+        List<string> ids = new List<string>();
+        if (job != null && !job.Finished) return ids;
+        lock (plans)
+        {
+            foreach (ServerEntry s in cfg.Servers)
+            {
+                string stamp;
+                if (!plans.ContainsKey(s.Id) || !stamps.TryGetValue(s.Id, out stamp)) continue;
+                if (Sync.TargetStamp(s.Target) != stamp) ids.Add(s.Id);
+            }
+        }
+        return ids;
+    }
+
     private void StartCheck(string id, bool thorough)
     {
         EnsureIdle();
@@ -522,6 +554,7 @@ internal sealed class SyncServer
             finally
             {
                 try { cfg.Save(); } catch (Exception) { }
+                lock (plans) stamps[id] = Sync.TargetStamp(s.Target);
                 j.Finished = true;
             }
         }, TaskCreationOptions.LongRunning);
@@ -556,6 +589,7 @@ internal sealed class SyncServer
             finally
             {
                 try { cfg.Save(); } catch (Exception) { }
+                lock (plans) stamps[id] = Sync.TargetStamp(s.Target);
                 j.Finished = true;
             }
         }, TaskCreationOptions.LongRunning);

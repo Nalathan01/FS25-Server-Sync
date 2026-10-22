@@ -29,6 +29,8 @@ Deutsche Version: [README.de.md](README.de.md)
 * **Settings in one place:** mod library, language, archive and how much disk space each server folder really takes up.
 * **Switch the active mods folder** right from the tool: back to the game's default folder, to any server folder or to a folder of your choice.
 * **Re-check single mods:** if the game still shows a red warning triangle for a mod, tick it in the list and only that mod is checked again.
+* **Notices changes:** if something changes in a server folder while the tool is open, it checks again on its own.
+* **Updates with one click:** when a new version is out, the tool shows it and updates itself after one click. Your servers and settings stay.
 * **English, German and French,** following your Windows language or chosen in the settings.
 
 ![Overview](docs/screenshots/1_overview_en.png)
@@ -73,7 +75,7 @@ The exe is written to `dist\FS25 Server Sync.exe`.
 
 ## Privacy
 
-The tool only connects to the servers you add. There is no account and no tracking. Its window is a small page served only to your own computer (127.0.0.1). A web interface password is encrypted with Windows (DPAPI) for your user account and sent only to that server. Note that the GIANTS web interface uses plain http, just like logging in with a browser.
+The tool only connects to the servers you add and, once per start, to GitHub to look for a new version. There is no account and no tracking. Its window is a small page served only to your own computer (127.0.0.1). A web interface password is encrypted with Windows (DPAPI) for your user account and sent only to that server. Note that the GIANTS web interface uses plain http, just like logging in with a browser.
 
 ## Feedback
 
@@ -94,7 +96,7 @@ Free code signing provided by [SignPath.io](https://about.signpath.io/), certifi
 
 Only builds made automatically by GitHub Actions from the source code in this repository are signed.
 
-Privacy: this program only connects to the servers you add yourself. It does not send any other information to networked systems.
+Privacy: this program only connects to the servers you add yourself and to GitHub to look for updates. It does not send any other information to networked systems.
 
 ## License
 

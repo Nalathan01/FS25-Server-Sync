@@ -317,6 +317,24 @@ internal static partial class Sync
         return Path.Combine(StoreDir(library), "_Archiv");
     }
 
+    public static string TargetStamp(string target)
+    {
+        if (string.IsNullOrEmpty(target) || !Directory.Exists(target)) return "";
+        try
+        {
+            List<string> parts = new List<string>();
+            foreach (string f in Directory.EnumerateFiles(target, "*.zip"))
+            {
+                FileInfo fi = new FileInfo(f);
+                parts.Add(fi.Name + "|" + fi.Length.ToString(CultureInfo.InvariantCulture) + "|" + fi.LastWriteTimeUtc.Ticks.ToString(CultureInfo.InvariantCulture));
+            }
+            foreach (string d in Directory.EnumerateDirectories(target)) parts.Add(Path.GetFileName(d) + "|dir");
+            parts.Sort(StringComparer.OrdinalIgnoreCase);
+            return string.Join("\n", parts);
+        }
+        catch (Exception) { return ""; }
+    }
+
     public static string PlaceInStore(string store, string fileName, string file)
     {
         Directory.CreateDirectory(store);

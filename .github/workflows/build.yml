@@ -6,6 +6,9 @@ on:
       - "v*"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: windows-latest
@@ -25,3 +28,13 @@ jobs:
           name: FS25-Server-Sync
           path: dist/*.exe
           if-no-files-found: error
+
+      - name: Attach exe to release
+        if: github.ref_type == 'tag'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view $env:GITHUB_REF_NAME *> $null
+          if ($LASTEXITCODE -ne 0) { gh release create $env:GITHUB_REF_NAME --draft --title "FS25 Server Sync $($env:GITHUB_REF_NAME.TrimStart('v'))" --notes "" }
+          gh release upload $env:GITHUB_REF_NAME "dist/FS25 Server Sync.exe" --clobber

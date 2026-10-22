@@ -28,6 +28,8 @@ English version: [README.md](README.md)
 * **Server mit Mitspielern teilen:** Einen Server-Eintrag als kleine Datei exportieren und weitergeben. Deine Mitspieler ziehen sie ins Fenster, und alles ist ausgefüllt. Login, Ordner und Passwörter werden nicht geteilt.
 * **Einstellungen an einem Ort:** Mod-Bibliothek, Sprache, Archiv und wie viel Platz jeder Server-Ordner wirklich belegt.
 * **Aktiven Mods-Ordner direkt umstellen:** zurück auf den Standard-Ordner des Spiels, auf einen Server-Ordner oder auf einen Ordner deiner Wahl.
+* **Merkt Änderungen:** Ändert sich bei offenem Tool etwas in einem Server-Ordner, prüft es von selbst neu.
+* **Updates mit einem Klick:** Gibt es eine neue Version, zeigt das Tool sie an und aktualisiert sich nach einem Klick selbst. Server und Einstellungen bleiben erhalten.
 * **Einzelne Mods neu prüfen:** Zeigt das Spiel bei einer Mod noch ein rotes Warndreieck, hakst du sie in der Liste an, und nur diese wird neu verglichen.
 * **Deutsch, Englisch und Französisch,** passend zur Windows-Sprache oder in den Einstellungen gewählt.
 
@@ -73,7 +75,7 @@ Die exe landet in `dist\FS25 Server Sync.exe`.
 
 ## Datenschutz
 
-Das Tool verbindet sich nur mit den Servern, die du einträgst. Es gibt kein Konto und kein Tracking. Sein Fenster ist eine kleine Seite, die nur auf deinem eigenen Rechner bereitgestellt wird (127.0.0.1). Ein Passwort für das Webinterface wird mit Windows (DPAPI) für dein Benutzerkonto verschlüsselt und nur an diesen Server geschickt. Das GIANTS-Webinterface nutzt allerdings einfaches http, genau wie beim Login im Browser.
+Das Tool verbindet sich nur mit den Servern, die du einträgst, und einmal pro Start mit GitHub, um nach einer neuen Version zu schauen. Es gibt kein Konto und kein Tracking. Sein Fenster ist eine kleine Seite, die nur auf deinem eigenen Rechner bereitgestellt wird (127.0.0.1). Ein Passwort für das Webinterface wird mit Windows (DPAPI) für dein Benutzerkonto verschlüsselt und nur an diesen Server geschickt. Das GIANTS-Webinterface nutzt allerdings einfaches http, genau wie beim Login im Browser.
 
 ## Feedback
 
@@ -94,7 +96,7 @@ Kostenlose Code-Signatur durch [SignPath.io](https://about.signpath.io/), Zertif
 
 Signiert werden nur Builds, die GitHub Actions automatisch aus dem Quellcode in diesem Repository erstellt.
 
-Datenschutz: Dieses Programm verbindet sich nur mit den Servern, die du selbst einträgst. Andere Informationen schickt es nirgendwohin.
+Datenschutz: Dieses Programm verbindet sich nur mit den Servern, die du selbst einträgst, und mit GitHub, um nach Updates zu schauen. Andere Informationen schickt es nirgendwohin.
 
 ## Lizenz
 
