@@ -36,6 +36,12 @@ internal static class NativeLinks
     private static extern bool CreateHardLinkW(string newFileName, string existingFileName, IntPtr security);
 
     [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    private static extern bool CopyFileExW(string existingFileName, string newFileName, IntPtr progress, IntPtr data, IntPtr cancel, uint flags);
+
+    private const uint CopyFailIfExists = 0x1;
+    private const uint CopyAllowDecryptedDestination = 0x8;
+
+    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
     private static extern bool GetVolumePathNameW(string fileName, StringBuilder volumePathName, int bufferLength);
 
     private static bool Info(string path, out FileInfoByHandle info)
@@ -64,6 +70,11 @@ internal static class NativeLinks
     public static void CreateHardLink(string newPath, string existingPath)
     {
         if (!CreateHardLinkW(newPath, existingPath, IntPtr.Zero)) throw new Win32Exception(Marshal.GetLastWin32Error());
+    }
+
+    public static void CopyFile(string source, string dest)
+    {
+        if (!CopyFileExW(source, dest, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, CopyFailIfExists | CopyAllowDecryptedDestination)) throw new Win32Exception(Marshal.GetLastWin32Error());
     }
 
     public static string VolumeOf(string path)

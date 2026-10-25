@@ -23,7 +23,7 @@ internal static partial class Sync
         {
             job.ThrowIfCancelled();
             job.Current = r.Title;
-            Retire(cfg, r.TargetPath);
+            OnFile(Path.GetFileName(r.TargetPath), () => Retire(cfg, r.TargetPath));
             job.Done++;
         }
 
@@ -73,46 +73,7 @@ internal static partial class Sync
         {
             job.ThrowIfCancelled();
             job.Current = r.Title;
-            string t = Path.Combine(target, r.FileName);
-            if (r.Status == "link")
-            {
-                LinkInto(cfg, r.Source, t, sameVolume);
-                job.Done++;
-                continue;
-            }
-            string file = fetched[r];
-            string h = fetchedHash[r];
-            if (file == null)
-            {
-                if (!AppEnv.SamePath(r.CompareWith, t)) LinkInto(cfg, r.CompareWith, t, sameVolume);
-                job.Identical++;
-                job.Done++;
-                continue;
-            }
-            if (File.Exists(t) && SizeOf(t) == r.Bytes && GameHash(cfg, t, r.ModName, job) == h)
-            {
-                File.Delete(file);
-                job.Identical++;
-                job.Done++;
-                continue;
-            }
-            List<LocalFile> cands;
-            if (!index.TryGetValue(r.ModName, out cands)) cands = new List<LocalFile>();
-            LocalFile same = cands.OrderBy(c => c.InStore ? 1 : 0).FirstOrDefault(c => c.Length == r.Bytes && GameHash(cfg, c.Path, r.ModName, job) == h);
-            if (same != null)
-            {
-                File.Delete(file);
-                LinkInto(cfg, same.Path, t, sameVolume);
-                job.Identical++;
-            }
-            else
-            {
-                job.Saved++;
-                job.SavedBytes += Math.Max(0, r.Bytes);
-                Retire(cfg, t);
-                File.Move(file, t);
-                MarkPlaced(cfg, t);
-            }
+            OnFile(r.FileName, () => Place(cfg, r, target, fetched, fetchedHash, index, sameVolume, job));
             job.Done++;
         }
         try { if (Directory.Exists(tmpDir) && !Directory.EnumerateFileSystemEntries(tmpDir).Any()) Directory.Delete(tmpDir); } catch (Exception) { }
@@ -127,6 +88,61 @@ internal static partial class Sync
         RetireStore(plan.Library);
     }
 
+    private static void Place(Config cfg, PlanRow r, string target, Dictionary<PlanRow, string> fetched, Dictionary<PlanRow, string> fetchedHash, Dictionary<string, List<LocalFile>> index, bool sameVolume, Job job)
+    {
+        string t = Path.Combine(target, r.FileName);
+        if (r.Status == "link")
+        {
+            LinkInto(cfg, r.Source, t, sameVolume);
+            return;
+        }
+        string file = fetched[r];
+        string h = fetchedHash[r];
+        if (file == null)
+        {
+            if (!AppEnv.SamePath(r.CompareWith, t)) LinkInto(cfg, r.CompareWith, t, sameVolume);
+            job.Identical++;
+            return;
+        }
+        if (File.Exists(t) && SizeOf(t) == r.Bytes && GameHash(cfg, t, r.ModName, job) == h)
+        {
+            File.Delete(file);
+            job.Identical++;
+            return;
+        }
+        List<LocalFile> cands;
+        if (!index.TryGetValue(r.ModName, out cands)) cands = new List<LocalFile>();
+        LocalFile same = cands.OrderBy(c => c.InStore ? 1 : 0).FirstOrDefault(c => c.Length == r.Bytes && GameHash(cfg, c.Path, r.ModName, job) == h);
+        if (same != null)
+        {
+            File.Delete(file);
+            LinkInto(cfg, same.Path, t, sameVolume);
+            job.Identical++;
+        }
+        else
+        {
+            job.Saved++;
+            job.SavedBytes += Math.Max(0, r.Bytes);
+            Retire(cfg, t);
+            MoveInto(file, t);
+            MarkPlaced(cfg, t);
+        }
+    }
+
+    private static void OnFile(string name, Action action)
+    {
+        try { action(); }
+        catch (AppError) { throw; }
+        catch (Exception ex) { throw new AppError("fileFailed", name + ": " + ex.Message); }
+    }
+
+    private static void MoveInto(string file, string t)
+    {
+        if (NativeLinks.SameVolume(file, t)) { File.Move(file, t); return; }
+        NativeLinks.CopyFile(file, t);
+        File.Delete(file);
+    }
+
     private static void LinkInto(Config cfg, string source, string t, bool sameVolume)
     {
         if (File.Exists(t) && NativeLinks.SameFile(t, source)) return;
@@ -134,7 +150,7 @@ internal static partial class Sync
         if (sameVolume) NativeLinks.CreateHardLink(t, source);
         else
         {
-            File.Copy(source, t);
+            NativeLinks.CopyFile(source, t);
             MarkPlaced(cfg, t);
         }
     }

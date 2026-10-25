@@ -258,22 +258,27 @@ internal static partial class Sync
             if (cfg.LocalHashes.TryGetValue(key, out cached)) return cached;
         }
         string h;
-        using (MD5 md5 = MD5.Create())
-        using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 1 << 20))
+        try
         {
-            byte[] buffer = new byte[1 << 20];
-            int read;
-            while ((read = fs.Read(buffer, 0, buffer.Length)) > 0)
+            using (MD5 md5 = MD5.Create())
+            using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 1 << 20))
             {
-                if (job != null) job.ThrowIfCancelled();
-                md5.TransformBlock(buffer, 0, read, null, 0);
+                byte[] buffer = new byte[1 << 20];
+                int read;
+                while ((read = fs.Read(buffer, 0, buffer.Length)) > 0)
+                {
+                    if (job != null) job.ThrowIfCancelled();
+                    md5.TransformBlock(buffer, 0, read, null, 0);
+                }
+                byte[] name = Encoding.ASCII.GetBytes(modName);
+                md5.TransformFinalBlock(name, 0, name.Length);
+                StringBuilder sb = new StringBuilder();
+                foreach (byte b in md5.Hash) sb.Append(b.ToString("x2", CultureInfo.InvariantCulture));
+                h = sb.ToString();
             }
-            byte[] name = Encoding.ASCII.GetBytes(modName);
-            md5.TransformFinalBlock(name, 0, name.Length);
-            StringBuilder sb = new StringBuilder();
-            foreach (byte b in md5.Hash) sb.Append(b.ToString("x2", CultureInfo.InvariantCulture));
-            h = sb.ToString();
         }
+        catch (AppError) { throw; }
+        catch (Exception ex) { throw new AppError("fileFailed", path + ": " + ex.Message); }
         lock (Config.Sync) cfg.LocalHashes[key] = h;
         return h;
     }
