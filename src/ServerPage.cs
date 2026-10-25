@@ -180,10 +180,11 @@ internal static class ServerPage
         try
         {
             html = GetText(baseUrl + "mods.html?lang=en");
-            if (IsLoginPage(html) && LoginFor(baseUrl) != null)
+            bool managed = html.IndexOf("name=\"modUpload\"", StringComparison.OrdinalIgnoreCase) >= 0;
+            if (!managed && LoginFor(baseUrl) != null)
             {
-                if (!DoLogin(baseUrl)) throw new AppError("loginFailed", null);
-                html = GetText(baseUrl + "mods.html?lang=en");
+                if (DoLogin(baseUrl)) html = GetText(baseUrl + "mods.html?lang=en");
+                else if (IsLoginPage(html)) throw new AppError("loginFailed", null);
             }
         }
         catch (WebException ex)

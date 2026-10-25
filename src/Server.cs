@@ -39,6 +39,7 @@ internal sealed class SyncServer
         listener.Start();
         string url = prefix + "?t=" + token;
         AppEnv.Log("ServerSync", "Gestartet auf " + prefix);
+        try { File.WriteAllText(InstanceFile, url, new UTF8Encoding(false)); } catch (Exception) { }
 
         if (!noBrowser) OpenWindow(url);
         else if (!string.IsNullOrEmpty(urlFile)) File.WriteAllText(urlFile, url, new UTF8Encoding(false));
@@ -66,6 +67,7 @@ internal sealed class SyncServer
         listener.Stop();
         listener.Close();
         try { cfg.Save(); } catch (Exception) { }
+        try { if (File.Exists(InstanceFile) && File.ReadAllText(InstanceFile).Trim() == url) File.Delete(InstanceFile); } catch (Exception) { }
         AppEnv.Log("ServerSync", "Beendet");
         if (restart) Process.Start(Assembly.GetExecutingAssembly().Location, noBrowser ? "-NoBrowser" + (string.IsNullOrEmpty(urlFile) ? "" : " -UrlFile \"" + urlFile + "\"") : "");
     }
@@ -92,7 +94,25 @@ internal sealed class SyncServer
         }
     }
 
-    private void OpenWindow(string url)
+    private static string InstanceFile
+    {
+        get { return Path.Combine(AppEnv.DataDir, "serversync.url"); }
+    }
+
+    public static bool ShowRunningInstance()
+    {
+        try
+        {
+            if (!File.Exists(InstanceFile)) return false;
+            string url = File.ReadAllText(InstanceFile).Trim();
+            if (url.Length == 0) return false;
+            StartWindow(url);
+            return true;
+        }
+        catch (Exception) { return false; }
+    }
+
+    private static Process StartWindow(string url)
     {
         string edge = null;
         foreach (string root in new string[] { Environment.GetEnvironmentVariable("ProgramFiles(x86)"), Environment.GetEnvironmentVariable("ProgramFiles") })
@@ -101,18 +121,21 @@ internal sealed class SyncServer
             string candidate = Path.Combine(root, @"Microsoft\Edge\Application\msedge.exe");
             if (File.Exists(candidate)) { edge = candidate; break; }
         }
-        if (edge != null)
-        {
-            string profileDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"FS25ServerSync\edge");
-            ProcessStartInfo psi = new ProcessStartInfo(edge, "--app=" + url + " --user-data-dir=\"" + profileDir + "\" --window-size=1440,920 --no-first-run");
-            psi.UseShellExecute = false;
-            windowStart = DateTime.Now;
-            window = Process.Start(psi);
-        }
-        else
+        if (edge == null)
         {
             Process.Start(url);
+            return null;
         }
+        string profileDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"FS25ServerSync\edge");
+        ProcessStartInfo psi = new ProcessStartInfo(edge, "--app=" + url + " --user-data-dir=\"" + profileDir + "\" --window-size=1440,920 --no-first-run");
+        psi.UseShellExecute = false;
+        return Process.Start(psi);
+    }
+
+    private void OpenWindow(string url)
+    {
+        windowStart = DateTime.Now;
+        window = StartWindow(url);
     }
 
     private void Handle(HttpListenerContext ctx)
@@ -304,7 +327,18 @@ internal sealed class SyncServer
             }
             else if (path == "/api/launch")
             {
-                try { Process.Start("steam://rungameid/2300320"); }
+                string install = AppEnv.FindInstallPath();
+                string exe = AppEnv.GameExe(install);
+                try
+                {
+                    if (exe != null && !AppEnv.IsSteamInstall(install))
+                    {
+                        ProcessStartInfo psi = new ProcessStartInfo(exe);
+                        psi.WorkingDirectory = install;
+                        Process.Start(psi);
+                    }
+                    else Process.Start("steam://rungameid/2300320");
+                }
                 catch (Exception ex) { throw new AppError("launchFailed", ex.Message); }
                 SendJson(ctx, 200, Obj("ok", true));
             }

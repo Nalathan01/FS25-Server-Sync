@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using System.Net;
+using System.Threading;
 using System.Windows.Forms;
 
 internal static class Program
@@ -23,7 +24,19 @@ internal static class Program
             ServicePointManager.DefaultConnectionLimit = 16;
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             AppEnv.Init();
-            new SyncServer().Run(port, noBrowser, urlFile);
+            using (Mutex instance = new Mutex(false, @"Local\FS25ServerSync"))
+            {
+                bool owned;
+                try { owned = instance.WaitOne(5000); }
+                catch (AbandonedMutexException) { owned = true; }
+                if (!owned)
+                {
+                    if (!noBrowser) SyncServer.ShowRunningInstance();
+                    return 0;
+                }
+                try { new SyncServer().Run(port, noBrowser, urlFile); }
+                finally { instance.ReleaseMutex(); }
+            }
             return 0;
         }
         catch (Exception ex)

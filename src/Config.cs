@@ -71,19 +71,47 @@ internal sealed class Config
         }
     }
 
+    private static string BackupPath
+    {
+        get { return FilePath + ".bak"; }
+    }
+
+    private static Config TryRead(string path)
+    {
+        for (int attempt = 0; attempt < 10; attempt++)
+        {
+            if (!File.Exists(path)) return null;
+            try { return AppEnv.Json.Deserialize<Config>(File.ReadAllText(path, Encoding.UTF8)); }
+            catch (IOException) { System.Threading.Thread.Sleep(200); }
+            catch (Exception ex)
+            {
+                AppEnv.Log("Config", "Nicht lesbar: " + Path.GetFileName(path) + ": " + ex.Message);
+                return null;
+            }
+        }
+        AppEnv.Log("Config", "Gesperrt: " + Path.GetFileName(path));
+        return null;
+    }
+
     public static Config Load()
     {
         Migrate();
-        Config c = null;
-        try
+        Config c = TryRead(FilePath);
+        if (c == null && File.Exists(FilePath))
         {
-            if (File.Exists(FilePath)) c = AppEnv.Json.Deserialize<Config>(File.ReadAllText(FilePath, Encoding.UTF8));
+            string broken = FilePath + ".defekt-" + DateTime.Now.ToString("yyyyMMdd-HHmmss", System.Globalization.CultureInfo.InvariantCulture);
+            try { File.Copy(FilePath, broken, true); AppEnv.Log("Config", "Gesichert als " + Path.GetFileName(broken)); } catch (Exception) { }
         }
-        catch (Exception ex)
+        if (c == null)
         {
-            AppEnv.Log("Config", "Nicht lesbar: " + ex.Message);
+            c = TryRead(BackupPath);
+            if (c != null) AppEnv.Log("Config", "Aus serversync.json.bak wiederhergestellt");
         }
-        if (c == null) c = new Config();
+        if (c == null)
+        {
+            AppEnv.Log("Config", "Neue Einstellungen angelegt");
+            c = new Config();
+        }
         if (c.Servers == null) c.Servers = new List<ServerEntry>();
         if (c.LocalHashes == null) c.LocalHashes = new Dictionary<string, string>();
         if (c.ServerHashes == null) c.ServerHashes = new Dictionary<string, string>();
@@ -98,7 +126,7 @@ internal sealed class Config
         {
             string tmp = FilePath + ".tmp";
             File.WriteAllText(tmp, AppEnv.Json.Serialize(this), new UTF8Encoding(false));
-            if (File.Exists(FilePath)) File.Replace(tmp, FilePath, null);
+            if (File.Exists(FilePath)) File.Replace(tmp, FilePath, BackupPath);
             else File.Move(tmp, FilePath);
         }
     }

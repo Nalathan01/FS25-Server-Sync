@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Web.Script.Serialization;
@@ -99,11 +100,89 @@ internal static class AppEnv
             }
         }
         catch (Exception) { }
-        foreach (string c in new string[] { @"C:\Program Files (x86)\Farming Simulator 25", @"C:\Program Files\Farming Simulator 25" })
+        foreach (string c in UninstallLocations().Concat(EpicLocations()))
+        {
+            if (IsGameDir(c)) { GameInstallPath = c; return c; }
+        }
+        foreach (string c in new string[] { @"C:\Program Files (x86)\Farming Simulator 25", @"C:\Program Files\Farming Simulator 25", @"C:\Program Files (x86)\Farming Simulator 2025", @"C:\Program Files\Farming Simulator 2025", @"C:\Program Files\Epic Games\FarmingSimulator25" })
         {
             if (Directory.Exists(c)) { GameInstallPath = c; return c; }
         }
         return null;
+    }
+
+    public static string GameExe(string installDir)
+    {
+        if (string.IsNullOrEmpty(installDir)) return null;
+        string exe = Path.Combine(installDir, "FarmingSimulator2025.exe");
+        return File.Exists(exe) ? exe : null;
+    }
+
+    public static bool IsSteamInstall(string installDir)
+    {
+        return !string.IsNullOrEmpty(installDir) && installDir.IndexOf(@"\steamapps\", StringComparison.OrdinalIgnoreCase) >= 0;
+    }
+
+    private static bool IsGameDir(string dir)
+    {
+        return !string.IsNullOrEmpty(dir) && Directory.Exists(dir) && GameExe(dir) != null;
+    }
+
+    private static IEnumerable<string> UninstallLocations()
+    {
+        List<string> found = new List<string>();
+        foreach (Microsoft.Win32.RegistryHive hive in new Microsoft.Win32.RegistryHive[] { Microsoft.Win32.RegistryHive.LocalMachine, Microsoft.Win32.RegistryHive.CurrentUser })
+        {
+            foreach (Microsoft.Win32.RegistryView view in new Microsoft.Win32.RegistryView[] { Microsoft.Win32.RegistryView.Registry64, Microsoft.Win32.RegistryView.Registry32 })
+            {
+                try
+                {
+                    using (Microsoft.Win32.RegistryKey root = Microsoft.Win32.RegistryKey.OpenBaseKey(hive, view))
+                    using (Microsoft.Win32.RegistryKey un = root.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"))
+                    {
+                        if (un == null) continue;
+                        foreach (string sub in un.GetSubKeyNames())
+                        {
+                            using (Microsoft.Win32.RegistryKey k = un.OpenSubKey(sub))
+                            {
+                                if (k == null) continue;
+                                string name = k.GetValue("DisplayName") as string ?? "";
+                                if (!Regex.IsMatch(name, @"(Farming Simulator|Landwirtschafts-?Simulator) ?(25|2025)", RegexOptions.IgnoreCase)) continue;
+                                string loc = (k.GetValue("InstallLocation") as string ?? "").Trim('"', ' ');
+                                if (loc.Length > 0) found.Add(loc.TrimEnd('\\'));
+                            }
+                        }
+                    }
+                }
+                catch (Exception) { }
+            }
+        }
+        return found;
+    }
+
+    private static IEnumerable<string> EpicLocations()
+    {
+        List<string> found = new List<string>();
+        try
+        {
+            string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), @"Epic\EpicGamesLauncher\Data\Manifests");
+            if (!Directory.Exists(dir)) return found;
+            foreach (string f in Directory.GetFiles(dir, "*.item"))
+            {
+                try
+                {
+                    Dictionary<string, object> d = Json.DeserializeObject(File.ReadAllText(f)) as Dictionary<string, object>;
+                    if (d == null) continue;
+                    string name = GetString(d, "DisplayName") ?? "";
+                    if (!Regex.IsMatch(name, @"Farming Simulator ?(25|2025)", RegexOptions.IgnoreCase)) continue;
+                    string loc = GetString(d, "InstallLocation");
+                    if (!string.IsNullOrEmpty(loc)) found.Add(loc.TrimEnd('\\'));
+                }
+                catch (Exception) { }
+            }
+        }
+        catch (Exception) { }
+        return found;
     }
 
     private static string ReadRegistry(string subKey, string name)
