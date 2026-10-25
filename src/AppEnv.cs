@@ -223,6 +223,31 @@ internal static class AppEnv
         get { return GameDocumentsDir.IndexOf(@"\Packages\GIANTSSoftware.FarmingSimulator25PC_", StringComparison.OrdinalIgnoreCase) >= 0; }
     }
 
+    public static string StoreAppId()
+    {
+        string family = Path.GetFileName(Path.GetDirectoryName(Path.GetDirectoryName(GameDocumentsDir)));
+        string name = family.Substring(0, family.LastIndexOf('_'));
+        foreach (string root in GamingRoots())
+        {
+            try
+            {
+                foreach (string sub in Directory.GetDirectories(root))
+                {
+                    string manifest = Path.Combine(sub, @"Content\appxmanifest.xml");
+                    if (!File.Exists(manifest)) continue;
+                    XmlDocument doc = new XmlDocument();
+                    doc.Load(manifest);
+                    XmlNode identity = doc.SelectSingleNode("//*[local-name()='Identity']");
+                    if (identity == null || identity.Attributes["Name"] == null || !string.Equals(identity.Attributes["Name"].Value, name, StringComparison.OrdinalIgnoreCase)) continue;
+                    XmlNode app = doc.SelectSingleNode("//*[local-name()='Application']");
+                    if (app != null && app.Attributes["Id"] != null) return family + "!" + app.Attributes["Id"].Value;
+                }
+            }
+            catch (Exception) { }
+        }
+        return null;
+    }
+
     public static HashSet<string> InstalledDlcs()
     {
         HashSet<string> result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

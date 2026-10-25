@@ -331,7 +331,13 @@ internal sealed class SyncServer
                 string exe = AppEnv.GameExe(install);
                 try
                 {
-                    if (exe != null && !AppEnv.IsSteamInstall(install))
+                    if (AppEnv.IsStoreVersion)
+                    {
+                        string app = AppEnv.StoreAppId();
+                        if (app == null) throw new Exception("appxmanifest.xml");
+                        Process.Start("explorer.exe", @"shell:AppsFolder\" + app);
+                    }
+                    else if (exe != null && !AppEnv.IsSteamInstall(install))
                     {
                         ProcessStartInfo psi = new ProcessStartInfo(exe);
                         psi.WorkingDirectory = install;
