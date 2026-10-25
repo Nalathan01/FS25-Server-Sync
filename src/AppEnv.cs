@@ -225,7 +225,11 @@ internal static class AppEnv
 
     public static HashSet<string> InstalledDlcs()
     {
-        if (IsStoreVersion) return null;
+        if (IsStoreVersion)
+        {
+            LogStoreDlcs();
+            return null;
+        }
         HashSet<string> result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         List<string> dirs = new List<string>();
         string install = FindInstallPath();
@@ -240,6 +244,68 @@ internal static class AppEnv
             foreach (string f in Directory.GetDirectories(d)) if (f.EndsWith(".dlc", StringComparison.OrdinalIgnoreCase)) result.Add(Path.GetFileName(f));
         }
         return any ? result : null;
+    }
+
+    private static bool storeDlcsLogged;
+
+    private static void LogStoreDlcs()
+    {
+        if (storeDlcsLogged) return;
+        storeDlcsLogged = true;
+        List<string> roots = new List<string>();
+        roots.Add(GameDocumentsDir);
+        foreach (DriveInfo d in DriveInfo.GetDrives())
+        {
+            try
+            {
+                if (d.DriveType != DriveType.Fixed || !d.IsReady) continue;
+                string drive = d.RootDirectory.FullName;
+                List<string> cands = new List<string>();
+                cands.Add(Path.Combine(drive, "XboxGames"));
+                string gr = Path.Combine(drive, ".GamingRoot");
+                if (File.Exists(gr))
+                {
+                    byte[] b = File.ReadAllBytes(gr);
+                    if (b.Length > 8)
+                    {
+                        string rel = Encoding.Unicode.GetString(b, 8, b.Length - 8).Trim(new char[] { (char)0, (char)32, (char)92 });
+                        Log("DLC-Suche", gr + " zeigt auf " + rel);
+                        if (rel.Length > 0) cands.Add(Path.Combine(drive, rel));
+                    }
+                }
+                foreach (string c in cands)
+                {
+                    if (!Directory.Exists(c) || roots.Any(r => SamePath(r, c))) continue;
+                    roots.Add(c);
+                    Log("DLC-Suche", "Ordner in " + c + ": " + string.Join(", ", Directory.GetDirectories(c).Select(x => Path.GetFileName(x))));
+                }
+            }
+            catch (Exception ex) { Log("DLC-Suche", d.Name + ": " + ex.Message); }
+        }
+        foreach (string root in roots)
+        {
+            List<string> hits = new List<string>();
+            FindDlcs(root, 0, hits);
+            Log("DLC-Suche", root + ": " + (hits.Count == 0 ? "keine DLCs" : string.Join(" | ", hits)));
+        }
+    }
+
+    private static void FindDlcs(string dir, int depth, List<string> hits)
+    {
+        if (depth > 5 || hits.Count >= 60) return;
+        try
+        {
+            foreach (string f in Directory.GetFiles(dir, "*.dlc")) hits.Add(f);
+            foreach (string sub in Directory.GetDirectories(dir))
+            {
+                if (sub.EndsWith(".dlc", StringComparison.OrdinalIgnoreCase)) { hits.Add(sub); continue; }
+                if (NativeLinks.IsReparsePoint(sub)) continue;
+                string n = Path.GetFileName(sub);
+                if (depth == 0 && (n.Equals("mods", StringComparison.OrdinalIgnoreCase) || n.StartsWith("mods_", StringComparison.OrdinalIgnoreCase) || n.StartsWith("savegame", StringComparison.OrdinalIgnoreCase))) continue;
+                FindDlcs(sub, depth + 1, hits);
+            }
+        }
+        catch (Exception) { }
     }
 
     private static void MoveFromSettingsDir()
