@@ -218,8 +218,14 @@ internal static class AppEnv
         }
     }
 
+    public static bool IsStoreVersion
+    {
+        get { return GameDocumentsDir.IndexOf(@"\Packages\GIANTSSoftware.FarmingSimulator25PC_", StringComparison.OrdinalIgnoreCase) >= 0; }
+    }
+
     public static HashSet<string> InstalledDlcs()
     {
+        if (IsStoreVersion) return null;
         HashSet<string> result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         List<string> dirs = new List<string>();
         string install = FindInstallPath();
