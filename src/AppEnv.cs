@@ -40,9 +40,32 @@ internal static class AppEnv
         return s;
     }
 
+    private static string gameDocumentsDir;
+
     public static string GameDocumentsDir
     {
-        get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), @"My Games\FarmingSimulator2025"); }
+        get
+        {
+            if (gameDocumentsDir == null) gameDocumentsDir = FindGameDocumentsDir();
+            return gameDocumentsDir;
+        }
+    }
+
+    private static string FindGameDocumentsDir()
+    {
+        string docs = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), @"My Games\FarmingSimulator2025");
+        if (File.Exists(Path.Combine(docs, "gameSettings.xml"))) return docs;
+        try
+        {
+            string packages = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Packages");
+            foreach (string pkg in Directory.GetDirectories(packages, "GIANTSSoftware.FarmingSimulator25PC_*"))
+            {
+                string local = Path.Combine(pkg, @"LocalCache\Local");
+                if (File.Exists(Path.Combine(local, "gameSettings.xml"))) return local;
+            }
+        }
+        catch (Exception) { }
+        return docs;
     }
 
     public static void Init()

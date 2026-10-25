@@ -147,12 +147,20 @@ internal static partial class Sync
     {
         if (File.Exists(t) && NativeLinks.SameFile(t, source)) return;
         Retire(cfg, t);
-        if (sameVolume) NativeLinks.CreateHardLink(t, source);
-        else
+        if (sameVolume)
         {
-            NativeLinks.CopyFile(source, t);
-            MarkPlaced(cfg, t);
+            try
+            {
+                NativeLinks.CreateHardLink(t, source);
+                return;
+            }
+            catch (System.ComponentModel.Win32Exception ex)
+            {
+                AppEnv.Log("Verlinken", Path.GetFileName(t) + ": " + ex.Message + ", wird kopiert");
+            }
         }
+        NativeLinks.CopyFile(source, t);
+        MarkPlaced(cfg, t);
     }
 
     private static void Retire(Config cfg, string path)
