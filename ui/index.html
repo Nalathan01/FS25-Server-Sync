@@ -133,6 +133,7 @@ button, input { font: inherit; color: inherit; }
 .icon-btn:hover { color: var(--ink); background: rgba(255,255,255,0.06); border-color: var(--line); }
 .icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .reverify { margin-top: 34px; text-align: center; }
+.restore-row { display: flex; justify-content: flex-end; margin-top: 10px; }
 .linkish { background: none; border: 0; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; font-size: 13px; }
 .linkish:hover { color: var(--ink); }
 .linkish:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -431,7 +432,7 @@ const token = new URLSearchParams(location.search).get("t") || "";
 const I18N = {
   de: {
     tagline: "Mods exakt wie auf dem Server", servers: "Server", addServer: "Server hinzufügen", library: "Mod-Bibliothek", change: "Ändern", open: "Öffnen",
-    gameLoads: "Aktiver Mods-Ordner im Spiel", defaultFolder: "Standard-Mods-Ordner", restorePrev: "Vorherigen Ordner wieder aktivieren", notSet: "nicht festgelegt",
+    gameLoads: "Aktiver Mods-Ordner im Spiel", defaultFolder: "Standard-Mods-Ordner", restorePrev: "Vorherigen Ordner wieder aktivieren", restoreDefault: "Standard-Mods-Ordner wieder aktivieren", notSet: "nicht festgelegt",
     srvNew: "Server hinzufügen", srvEdit: "Server bearbeiten", srvModalSub: "Die Mods-Seite muss der Server-Admin im Webinterface freigegeben haben.",
     fName: "Name", fUrl: "Adresse der Mods-Seite", fUrlHint: "Die komplette Adresse aus dem Browser einfügen. IP und Port reichen auch.", fTarget: "Zielordner für die Server-Mods",
     browse: "Durchsuchen", delete: "Entfernen", cancel: "Abbrechen", save: "Speichern",
@@ -504,7 +505,7 @@ const I18N = {
   },
   en: {
     tagline: "Mods exactly as on the server", servers: "Servers", addServer: "Add server", library: "Mod library", change: "Change", open: "Open",
-    gameLoads: "Game's active mods folder", defaultFolder: "Default mods folder", restorePrev: "Reactivate previous folder", notSet: "not set",
+    gameLoads: "Game's active mods folder", defaultFolder: "Default mods folder", restorePrev: "Reactivate previous folder", restoreDefault: "Reactivate default mods folder", notSet: "not set",
     srvNew: "Add server", srvEdit: "Edit server", srvModalSub: "The server admin must have enabled the mods page in the web interface.",
     fName: "Name", fUrl: "Address of the mods page", fUrlHint: "Paste the full address from your browser. IP and port also work.", fTarget: "Target folder for the server mods",
     browse: "Browse", delete: "Remove", cancel: "Cancel", save: "Save",
@@ -577,7 +578,7 @@ const I18N = {
   },
   fr: {
     tagline: "Les mods exactement comme sur le serveur", servers: "Serveurs", addServer: "Ajouter un serveur", library: "Bibliothèque de mods", change: "Modifier", open: "Ouvrir",
-    gameLoads: "Dossier de mods actif du jeu", defaultFolder: "Dossier de mods par défaut", restorePrev: "Réactiver le dossier précédent", notSet: "non défini",
+    gameLoads: "Dossier de mods actif du jeu", defaultFolder: "Dossier de mods par défaut", restorePrev: "Réactiver le dossier précédent", restoreDefault: "Réactiver le dossier de mods par défaut", notSet: "non défini",
     srvNew: "Ajouter un serveur", srvEdit: "Modifier le serveur", srvModalSub: "L'administrateur du serveur doit avoir activé la page des mods dans l'interface web.",
     fName: "Nom", fUrl: "Adresse de la page des mods", fUrlHint: "Collez l'adresse complète depuis votre navigateur. L'IP et le port suffisent aussi.", fTarget: "Dossier cible pour les mods du serveur",
     browse: "Parcourir", delete: "Retirer", cancel: "Annuler", save: "Enregistrer",
@@ -800,7 +801,7 @@ function renderMain() {
       <div class="title-row"><h2>${esc(s.Name)}</h2><button class="icon-btn" id="btnEdit" title="${esc(t("editServer"))}" ${busy ? "disabled" : ""}>${svg(16, P.edit, 2.2)}</button></div><div class="hero-meta">${meta.join("")}</div></div>
       ${plan ? `<div class="hero-stat"><div class="num">${fmt(plan.ServerTotal)}</div><div class="lbl">${esc(t("modsOnServer"))}</div><div class="sub">${esc(statSub)}</div></div>` : ""}
     </div>
-    ${flowHtml(s, plan, c, pending, busy)}`;
+    ${flowHtml(s, plan, c, pending, busy)}${restoreHtml(s, busy)}`;
   if (plan && plan.Rows.length) {
     const present = GROUPS.filter(g => c[g.key]);
     const segs = present.map(g => `<div class="seg" data-g="${g.key}" style="flex:${c[g.key]};background:${g.color}" data-tip="${esc(t(g.label))}: ${fmt(c[g.key])}"></div>`).join("");
@@ -844,6 +845,7 @@ function renderMain() {
   const act = $("flowBtn");
   if (act) act.onclick = () => ({ check: () => startCheck(false), apply: openApplyModal, activate, launch }[act.dataset.a])();
   if ($("btnReverify")) $("btnReverify").onclick = openReverify;
+  if ($("btnRestore")) $("btnRestore").onclick = restorePrevious;
   $("btnEdit").onclick = () => openServerModal(s);
   $("openTarget").onclick = () => api("/api/open", { path: s.Target }).catch(e => toast(e.message, true));
   main.querySelectorAll(".chip").forEach(b => b.onclick = () => { state.filter = b.dataset.f; renderMain(); });
@@ -854,6 +856,14 @@ function renderMain() {
 }
 
 function missingDlcs(plan) { return plan && plan.Dlcs ? plan.Dlcs.filter(d => d.Installed === false) : []; }
+function restoreHtml(s, busy) {
+  const st = state.st;
+  if (!s.IsActive || !st.canRestore) return "";
+  const label = st.previousOverride ? t("restorePrev") : t("restoreDefault");
+  const tip = st.previousOverride || st.defaultModsDir || "";
+  return `<div class="restore-row"><button class="linkish" id="btnRestore" title="${esc(tip)}" ${busy || state.gameRunning ? "disabled" : ""}>${esc(label)}</button></div>`;
+}
+
 function flowHtml(s, plan, c, pending, busy) {
   const blocked = !!(plan && (c.nodl || c.error));
   let step, action, label, hint, disabled = busy;
