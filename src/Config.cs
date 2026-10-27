@@ -43,6 +43,7 @@ internal sealed class Config
     public string Language;
     public string PreviousOverride;
     public bool PreviousOverrideKnown;
+    public string LastServer;
     public List<ServerEntry> Servers = new List<ServerEntry>();
     public Dictionary<string, string> LocalHashes = new Dictionary<string, string>();
     public Dictionary<string, string> ServerHashes = new Dictionary<string, string>();

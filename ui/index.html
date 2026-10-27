@@ -659,9 +659,9 @@ const UNITS = { de: ["KB", "MB", "GB"], en: ["KB", "MB", "GB"], fr: ["Ko", "Mo",
 let LANG = "de";
 
 const NEWS = {
-  de: ["Beim Öffnen und beim Auswählen eines Servers prüft das Tool automatisch.", "Der Button unter den Schritten aktiviert jetzt den Standard-Mods-Ordner des Spiels."],
-  en: ["The tool checks automatically when it opens and when you select a server.", "The button below the steps now reactivates the game's default mods folder."],
-  fr: ["L'outil vérifie automatiquement à l'ouverture et lors de la sélection d'un serveur.", "Le bouton sous les étapes réactive désormais le dossier de mods par défaut du jeu."]
+  de: ["Beim Öffnen wählt das Tool den zuletzt benutzten Server aus.", "Beim Öffnen und beim Auswählen eines Servers prüft das Tool automatisch.", "Der Button unter den Schritten aktiviert jetzt den Standard-Mods-Ordner des Spiels."],
+  en: ["When it opens, the tool selects the server you used last.", "The tool checks automatically when it opens and when you select a server.", "The button below the steps now reactivates the game's default mods folder."],
+  fr: ["À l'ouverture, l'outil sélectionne le dernier serveur utilisé.", "L'outil vérifie automatiquement à l'ouverture et lors de la sélection d'un serveur.", "Le bouton sous les étapes réactive désormais le dossier de mods par défaut du jeu."]
 };
 
 function renderAbout() {
@@ -1050,7 +1050,8 @@ document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal()
 async function loadState() {
   state.st = await api("/api/state");
   state.gameRunning = state.st.gameRunning;
-  if (!state.sel || !state.st.servers.some(s => s.Id === state.sel)) state.sel = state.st.servers.length ? state.st.servers[0].Id : null;
+  const has = id => id && state.st.servers.some(s => s.Id === id);
+  if (!has(state.sel)) state.sel = has(state.st.lastServer) ? state.st.lastServer : state.st.servers.length ? state.st.servers[0].Id : null;
 }
 
 async function loadPlan() {
@@ -1069,6 +1070,7 @@ async function refresh() {
 
 async function selectServer(id) {
   state.sel = id;
+  api("/api/select", { id }).catch(() => {});
   state.filter = "all";
   state.query = "";
   try { await loadPlan(); } catch (e) { toast(e.message, true); }

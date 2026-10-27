@@ -277,6 +277,16 @@ internal sealed class SyncServer
                 SetOverride(string.IsNullOrEmpty(dir) ? null : dir);
                 SendJson(ctx, 200, State());
             }
+            else if (path == "/api/select")
+            {
+                string id = AppEnv.GetString(ReadBody(req), "id");
+                if (cfg.Servers.Any(s => s.Id == id) && cfg.LastServer != id)
+                {
+                    cfg.LastServer = id;
+                    cfg.Save();
+                }
+                SendJson(ctx, 200, Obj("ok", true));
+            }
             else if (path == "/api/deactivate")
             {
                 AppEnv.SetModsDirectoryOverride(cfg.PreviousOverrideKnown ? cfg.PreviousOverride : null);
@@ -473,6 +483,7 @@ internal sealed class SyncServer
         r["gameSettingsFound"] = File.Exists(AppEnv.GameSettingsPath);
         r["canRestore"] = cfg.PreviousOverrideKnown && cfg.Servers.Any(s => AppEnv.SamePath(active, s.Target));
         r["previousOverride"] = cfg.PreviousOverride;
+        r["lastServer"] = cfg.LastServer;
         r["servers"] = servers;
         r["job"] = job == null ? null : JobJson();
         return r;
