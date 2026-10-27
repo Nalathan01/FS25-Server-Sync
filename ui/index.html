@@ -436,7 +436,7 @@ const token = new URLSearchParams(location.search).get("t") || "";
 const I18N = {
   de: {
     tagline: "Mods exakt wie auf dem Server", servers: "Server", addServer: "Server hinzufügen", library: "Mod-Bibliothek", change: "Ändern", open: "Öffnen",
-    gameLoads: "Aktiver Mods-Ordner im Spiel", defaultFolder: "Standard-Mods-Ordner", restorePrev: "Vorherigen Ordner wieder aktivieren", restoreDefault: "Standard-Mods-Ordner wieder aktivieren", notSet: "nicht festgelegt",
+    gameLoads: "Aktiver Mods-Ordner im Spiel", defaultFolder: "Standard-Mods-Ordner", restorePrev: "Vorherigen Ordner wieder aktivieren", restoreDefault: "Standard-Mods-Ordner wieder aktivieren", restoredDefault: "Der Standard-Mods-Ordner des Spiels ist wieder aktiv.", notSet: "nicht festgelegt",
     srvNew: "Server hinzufügen", srvEdit: "Server bearbeiten", srvModalSub: "Die Mods-Seite muss der Server-Admin im Webinterface freigegeben haben.",
     fName: "Name", fUrl: "Adresse der Mods-Seite", fUrlHint: "Die komplette Adresse aus dem Browser einfügen. IP und Port reichen auch.", fTarget: "Zielordner für die Server-Mods",
     browse: "Durchsuchen", delete: "Entfernen", cancel: "Abbrechen", save: "Speichern",
@@ -509,7 +509,7 @@ const I18N = {
   },
   en: {
     tagline: "Mods exactly as on the server", servers: "Servers", addServer: "Add server", library: "Mod library", change: "Change", open: "Open",
-    gameLoads: "Game's active mods folder", defaultFolder: "Default mods folder", restorePrev: "Reactivate previous folder", restoreDefault: "Reactivate default mods folder", notSet: "not set",
+    gameLoads: "Game's active mods folder", defaultFolder: "Default mods folder", restorePrev: "Reactivate previous folder", restoreDefault: "Reactivate default mods folder", restoredDefault: "The game's default mods folder is active again.", notSet: "not set",
     srvNew: "Add server", srvEdit: "Edit server", srvModalSub: "The server admin must have enabled the mods page in the web interface.",
     fName: "Name", fUrl: "Address of the mods page", fUrlHint: "Paste the full address from your browser. IP and port also work.", fTarget: "Target folder for the server mods",
     browse: "Browse", delete: "Remove", cancel: "Cancel", save: "Save",
@@ -582,7 +582,7 @@ const I18N = {
   },
   fr: {
     tagline: "Les mods exactement comme sur le serveur", servers: "Serveurs", addServer: "Ajouter un serveur", library: "Bibliothèque de mods", change: "Modifier", open: "Ouvrir",
-    gameLoads: "Dossier de mods actif du jeu", defaultFolder: "Dossier de mods par défaut", restorePrev: "Réactiver le dossier précédent", restoreDefault: "Réactiver le dossier de mods par défaut", notSet: "non défini",
+    gameLoads: "Dossier de mods actif du jeu", defaultFolder: "Dossier de mods par défaut", restorePrev: "Réactiver le dossier précédent", restoreDefault: "Réactiver le dossier de mods par défaut", restoredDefault: "Le dossier de mods par défaut du jeu est de nouveau actif.", notSet: "non défini",
     srvNew: "Ajouter un serveur", srvEdit: "Modifier le serveur", srvModalSub: "L'administrateur du serveur doit avoir activé la page des mods dans l'interface web.",
     fName: "Nom", fUrl: "Adresse de la page des mods", fUrlHint: "Collez l'adresse complète depuis votre navigateur. L'IP et le port suffisent aussi.", fTarget: "Dossier cible pour les mods du serveur",
     browse: "Parcourir", delete: "Retirer", cancel: "Annuler", save: "Enregistrer",
@@ -659,9 +659,9 @@ const UNITS = { de: ["KB", "MB", "GB"], en: ["KB", "MB", "GB"], fr: ["Ko", "Mo",
 let LANG = "de";
 
 const NEWS = {
-  de: ["Die Versionsnummer steht oben neben dem Programmnamen.", "Unter den Schritten gibt es einen Button, der den vorherigen Mods-Ordner wieder aktiviert.", "Neuer Abschnitt \"Über\" in den Einstellungen mit den Neuerungen der aktuellen Version."],
-  en: ["The version number is shown next to the program name.", "Below the steps there is a button that reactivates the previous mods folder.", "New \"About\" section in the settings showing what is new in the current version."],
-  fr: ["Le numéro de version s'affiche à côté du nom du programme.", "Sous les étapes, un bouton réactive le dossier de mods précédent.", "Nouvelle section « À propos » dans les paramètres avec les nouveautés de la version actuelle."]
+  de: ["Der Button unter den Schritten aktiviert jetzt den Standard-Mods-Ordner des Spiels."],
+  en: ["The button below the steps now reactivates the game's default mods folder."],
+  fr: ["Le bouton sous les étapes réactive désormais le dossier de mods par défaut du jeu."]
 };
 
 function renderAbout() {
@@ -861,7 +861,7 @@ function renderMain() {
   const act = $("flowBtn");
   if (act) act.onclick = () => ({ check: () => startCheck(false), apply: openApplyModal, activate, launch }[act.dataset.a])();
   if ($("btnReverify")) $("btnReverify").onclick = openReverify;
-  if ($("btnRestore")) $("btnRestore").onclick = restorePrevious;
+  if ($("btnRestore")) $("btnRestore").onclick = activateDefault;
   $("btnEdit").onclick = () => openServerModal(s);
   $("openTarget").onclick = () => api("/api/open", { path: s.Target }).catch(e => toast(e.message, true));
   main.querySelectorAll(".chip").forEach(b => b.onclick = () => { state.filter = b.dataset.f; renderMain(); });
@@ -874,10 +874,8 @@ function renderMain() {
 function missingDlcs(plan) { return plan && plan.Dlcs ? plan.Dlcs.filter(d => d.Installed === false) : []; }
 function restoreHtml(s, busy) {
   const st = state.st;
-  if (!s.IsActive || !st.canRestore) return "";
-  const label = st.previousOverride ? t("restorePrev") : t("restoreDefault");
-  const tip = st.previousOverride || st.defaultModsDir || "";
-  return `<div class="restore-row"><button class="linkish" id="btnRestore" title="${esc(tip)}" ${busy || state.gameRunning ? "disabled" : ""}>${esc(label)}</button></div>`;
+  if (!s.IsActive) return "";
+  return `<div class="restore-row"><button class="linkish" id="btnRestore" title="${esc(st.defaultModsDir || "")}" ${busy || state.gameRunning ? "disabled" : ""}>${esc(t("restoreDefault"))}</button></div>`;
 }
 
 function flowHtml(s, plan, c, pending, busy) {
@@ -1257,8 +1255,8 @@ async function startCheck(thorough) {
 async function activate() {
   try { await api("/api/activate", { id: state.sel }); await refresh(); toast(t("activated"), "ok"); } catch (e) { toast(e.message, true); }
 }
-async function restorePrevious() {
-  try { await api("/api/deactivate", {}); await refresh(); toast(t("restored"), "ok"); } catch (e) { toast(e.message, true); }
+async function activateDefault() {
+  try { await api("/api/override", { path: "" }); await refresh(); toast(t("restoredDefault"), "ok"); } catch (e) { toast(e.message, true); }
 }
 
 function fmtDur(sec) {
