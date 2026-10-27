@@ -659,9 +659,9 @@ const UNITS = { de: ["KB", "MB", "GB"], en: ["KB", "MB", "GB"], fr: ["Ko", "Mo",
 let LANG = "de";
 
 const NEWS = {
-  de: ["Der Button unter den Schritten aktiviert jetzt den Standard-Mods-Ordner des Spiels."],
-  en: ["The button below the steps now reactivates the game's default mods folder."],
-  fr: ["Le bouton sous les étapes réactive désormais le dossier de mods par défaut du jeu."]
+  de: ["Beim Öffnen und beim Auswählen eines Servers prüft das Tool automatisch.", "Der Button unter den Schritten aktiviert jetzt den Standard-Mods-Ordner des Spiels."],
+  en: ["The tool checks automatically when it opens and when you select a server.", "The button below the steps now reactivates the game's default mods folder."],
+  fr: ["L'outil vérifie automatiquement à l'ouverture et lors de la sélection d'un serveur.", "Le bouton sous les étapes réactive désormais le dossier de mods par défaut du jeu."]
 };
 
 function renderAbout() {
@@ -1075,6 +1075,13 @@ async function selectServer(id) {
   renderRail();
   renderMain();
   $("main").scrollTop = 0;
+  autoCheck();
+}
+
+function autoCheck() {
+  if (!state.sel || state.plan || state.polling || (state.st.job && !state.st.job.Finished)) return;
+  state.quietCheck = true;
+  startCheck(false);
 }
 
 let targetTouched = false;
@@ -1249,7 +1256,7 @@ $("applyGo").onclick = async () => {
 };
 
 async function startCheck(thorough) {
-  try { await api("/api/check", { id: state.sel, thorough }); pollJob(); } catch (e) { toast(e.message, true); }
+  try { await api("/api/check", { id: state.sel, thorough }); pollJob(); } catch (e) { state.quietCheck = false; toast(e.message, true); }
 }
 
 async function activate() {
@@ -1317,12 +1324,14 @@ async function pollJob() {
   state.polling = false;
   $("jobModal").classList.remove("show");
   $("overlay").classList.remove("show");
+  const quiet = state.quietCheck;
+  state.quietCheck = false;
   if (j && j.ServerId) state.sel = j.ServerId;
   try { await refresh(); } catch (e) { toast(e.message, true); }
   if (!j) return;
   if (j.ErrorCode) toast(tErr(j.ErrorCode, j.ErrorArg), j.ErrorCode === "cancelled" ? undefined : true);
   else if (j.Kind === "apply") toast(j.Compared ? t("doneStats", { c: fmt(j.Compared), i: fmt(j.Identical), s: fmt(j.Saved), b: fmtBytes(j.SavedBytes) }) : t("doneStatsNone"), "ok");
-  else toast(t("doneCheck"), "ok");
+  else if (!quiet) toast(t("doneCheck"), "ok");
 }
 $("jobCancel").onclick = () => api("/api/job/cancel", {}).catch(() => {});
 $("updGo").onclick = async () => {
@@ -1377,6 +1386,7 @@ async function ping() {
   try {
     await refresh();
     if (state.st.job && !state.st.job.Finished) pollJob();
+    else autoCheck();
   } catch (e) { toast(e.message, true); }
 })();
 </script>
