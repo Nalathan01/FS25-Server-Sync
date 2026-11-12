@@ -335,10 +335,19 @@ internal sealed class SyncServer
                 cfg.Save();
                 SendJson(ctx, 200, State());
             }
+            else if (path == "/api/settings/launchargs")
+            {
+                string a = AppEnv.GetString(ReadBody(req), "args");
+                a = a == null ? null : a.Replace("\r", " ").Replace("\n", " ").Trim();
+                lock (Config.Sync) cfg.LaunchArgs = string.IsNullOrEmpty(a) ? null : a;
+                cfg.Save();
+                SendJson(ctx, 200, State());
+            }
             else if (path == "/api/launch")
             {
                 string install = AppEnv.FindInstallPath();
                 string exe = AppEnv.GameExe(install);
+                string args = cfg.LaunchArgs;
                 try
                 {
                     if (AppEnv.IsStoreVersion)
@@ -351,9 +360,15 @@ internal sealed class SyncServer
                     {
                         ProcessStartInfo psi = new ProcessStartInfo(exe);
                         psi.WorkingDirectory = install;
+                        if (!string.IsNullOrEmpty(args)) psi.Arguments = args;
                         Process.Start(psi);
                     }
-                    else Process.Start("steam://rungameid/2300320");
+                    else
+                    {
+                        string steam = AppEnv.SteamExe();
+                        if (!string.IsNullOrEmpty(args) && steam != null) Process.Start(steam, "-applaunch 2300320 " + args);
+                        else Process.Start("steam://rungameid/2300320");
+                    }
                 }
                 catch (Exception ex) { throw new AppError("launchFailed", ex.Message); }
                 SendJson(ctx, 200, Obj("ok", true));
@@ -477,6 +492,8 @@ internal sealed class SyncServer
         r["dataDir"] = AppEnv.DataDir;
         r["defaultModsDir"] = Path.Combine(AppEnv.GameDocumentsDir, "mods");
         r["langSetting"] = cfg.Language ?? "";
+        r["launchArgs"] = cfg.LaunchArgs ?? "";
+        r["storeVersion"] = AppEnv.IsStoreVersion;
         r["libraryExists"] = !string.IsNullOrEmpty(cfg.Library) && Directory.Exists(cfg.Library);
         r["store"] = string.IsNullOrEmpty(cfg.Library) ? null : Sync.StoreDir(cfg.Library);
         r["activeOverride"] = active;

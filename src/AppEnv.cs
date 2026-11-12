@@ -103,6 +103,18 @@ internal static class AppEnv
         if (string.IsNullOrEmpty(MapsRoot) && !string.IsNullOrEmpty(ModsRoot)) MapsRoot = Path.Combine(ModsRoot, "Karten");
     }
 
+    public static string SteamExe()
+    {
+        try
+        {
+            string steam = ReadRegistry(@"SOFTWARE\WOW6432Node\Valve\Steam", "InstallPath") ?? ReadRegistry(@"SOFTWARE\Valve\Steam", "InstallPath");
+            if (string.IsNullOrEmpty(steam)) return null;
+            string exe = Path.Combine(steam, "steam.exe");
+            return File.Exists(exe) ? exe : null;
+        }
+        catch (Exception) { return null; }
+    }
+
     public static string FindInstallPath()
     {
         if (!string.IsNullOrEmpty(GameInstallPath) && Directory.Exists(GameInstallPath)) return GameInstallPath;
